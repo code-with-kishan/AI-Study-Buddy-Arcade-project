@@ -224,7 +224,7 @@ The system successfully:
 
 GitHub Repository:  https://github.com/code-with-kishan/AI-Study-Buddy-Arcade-project.git
 
-Deployment Link:  
+Deployment Link:  https://ai-study-buddy-arcade-project-dp.onrender.com
 
 ---
 
