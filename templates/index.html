@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>AI Study Buddy - Arcade Ultimate</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+{% if api_warning %}
+<div style="
+background:#3f1d1d;
+padding:12px;
+border-radius:8px;
+color:#facc15;
+margin-bottom:15px;
+font-weight:600;
+border:1px solid #facc15;">
+{{ api_warning }}
+</div>
+{% endif %}
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+    font-family:'Inter',sans-serif;
+    background:#000814;
+    color:white;
+    overflow-x:hidden;
+}
+
+/* -------- AI CORE BOX -------- */
+
+.quiz-card{
+    margin-bottom:20px;
+    padding:10px;
+    border-radius:10px;
+    background:#0f172a;
+}
+
+.ai-core-box{
+    background:#111827;
+    border:1px solid #1e293b;
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:18px;
+    text-align:left;
+    box-shadow:0 0 15px rgba(250,204,21,0.15);
+}
+
+.ai-core-label{
+    font-size:14px;
+    color:#facc15;
+    margin-bottom:8px;
+    font-weight:600;
+}
+
+.ai-core-hint{
+    font-size:12px;
+    color:#9ca3af;
+    margin-top:6px;
+}
+
+.ai-select{
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:none;
+    background:#1f2937;
+    color:white;
+}
+
+/* ---------- STARFIELD ---------- */
+.star{
+    position:fixed;
+    width:2px;
+    height:2px;
+    background:white;
+    opacity:0.8;
+    animation:twinkle 2s infinite alternate;
+}
+
+@keyframes twinkle{
+    from{opacity:0.2;}
+    to{opacity:1;}
+}
+
+/* ---------- BIG SNAKE ---------- */
+.snake{
+    position:fixed;
+    font-size:120px;
+    opacity:0.07;
+    animation:snakeMove 25s linear infinite;
+    z-index:1;
+}
+
+@keyframes snakeMove{
+    0%{transform:translateX(-200px);}
+    100%{transform:translateX(120vw);}
+}
+
+/* ---------- FLOATING DRAGONS ---------- */
+.dragon{
+    position:fixed;
+    font-size:60px;
+    opacity:0.25;
+    animation:dragonFloat 20s linear infinite;
+    z-index:1;
+}
+
+@keyframes dragonFloat{
+    0%{transform:translateY(110vh);}
+    100%{transform:translateY(-200px);}
+}
+
+/* ---------- STICKER SHOWER ---------- */
+.sticker{
+    position:fixed;
+    font-size:30px;
+    animation:fall linear infinite;
+    z-index:1;
+}
+
+@keyframes fall{
+    0%{transform:translateY(-100px);}
+    100%{transform:translateY(110vh);}
+}
+
+/* ---------- CURSOR SPARKLES ---------- */
+.sparkle{
+    position:fixed;
+    width:6px;
+    height:6px;
+    background:gold;
+    border-radius:50%;
+    pointer-events:none;
+    animation:sparkleFade 0.8s linear forwards;
+    z-index:9999;
+}
+
+@keyframes sparkleFade{
+    to{
+        opacity:0;
+        transform:scale(2);
+    }
+}
+
+/* ---------- MAIN UI ---------- */
+.container{
+    max-width:900px;
+    margin:0 auto;
+    padding:80px 20px;
+    text-align:center;
+    position:relative;
+    z-index:10;
+}
+
+.arcade-title{
+    font-family:'Press Start 2P', cursive;
+    font-size:26px;
+    color:#facc15;
+    margin-bottom:15px;
+}
+
+.subtitle{
+    margin-bottom:30px;
+    color:#cbd5e1;
+}
+
+select,textarea{
+    width:100%;
+    padding:12px;
+    margin-bottom:12px;
+    border-radius:8px;
+    border:none;
+    background:#1f2937;
+    color:white;
+}
+
+button{
+    padding:12px 30px;
+    border:none;
+    border-radius:8px;
+    background:#facc15;
+    color:black;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+button:hover{
+    transform:scale(1.05);
+}
+
+.response-box{
+    margin-top:30px;
+    padding:25px;
+    border-radius:15px;
+    background:#111827;
+    border:1px solid #1e293b;
+    text-align:left;
+    white-space:pre-wrap;
+}
+
+.quiz-option{cursor:pointer;padding:6px 0;}
+.quiz-option:hover{color:#3b82f6;}
+.selected{color:#facc15;}
+.correct{color:#22c55e;}
+.wrong{color:#ef4444;}
+
+.timer{
+    font-weight:bold;
+    margin-bottom:10px;
+    color:#facc15;
+}
+</style>
+</head>
+
+<body>
+
+<div class="snake">🐍</div>
+<div class="dragon" style="left:15%;">🐉</div>
+<div class="dragon" style="left:75%; animation-duration:25s;">🐲</div>
+
+<div class="container">
+
+<div class="arcade-title">AI STUDY BUDDY</div>
+<div class="subtitle">Arcade Ultimate Mode Activated 🚀</div>
+
+<form method="POST">
+
+<div class="ai-core-box">
+<div class="ai-core-label">⚡ AI Core Engine</div>
+
+<select name="provider" class="ai-select">
+<option value="gemini" {% if provider == "gemini" %}selected{% endif %}>
+Gemini • Fast • Limited Free
+</option>
+
+<option value="openrouter" {% if provider == "openrouter" %}selected{% endif %}>
+OpenRouter • Free Backup
+</option>
+</select>
+
+<div class="ai-core-hint">
+Choose your AI engine before generating results.
+</div>
+</div>
+
+<select name="mode">
+<option value="explain" {% if mode == "explain" %}selected{% endif %}>Explain Topic</option>
+<option value="summarize" {% if mode == "summarize" %}selected{% endif %}>Summarize Notes</option>
+<option value="quiz" {% if mode == "quiz" %}selected{% endif %}>Interactive Quiz</option>
+<option value="flashcards" {% if mode == "flashcards" %}selected{% endif %}>Flashcards</option>
+</select>
+
+<select name="difficulty">
+<option value="Easy" {% if difficulty == "Easy" %}selected{% endif %}>Easy Level</option>
+<option value="Medium" {% if difficulty == "Medium" %}selected{% endif %}>Medium Level</option>
+<option value="Hard" {% if difficulty == "Hard" %}selected{% endif %}>Hard Level</option>
+</select>
+
+<textarea name="topic" rows="4" placeholder="Enter topic..." required>{{ user_input }}</textarea>
+
+<button type="submit">GENERATE</button>
+
+</form>
+
+{% if response %}
+<div class="response-box">
+
+{% if mode == "quiz" %}
+<div class="timer" id="timer"></div>
+<div id="quizContainer"></div>
+<button onclick="checkScore()">Submit Quiz</button>
+<div id="scoreBox"></div>
+
+<script>
+let timeLeft = 60;
+const timerDisplay = document.getElementById("timer");
+const countdown = setInterval(()=>{
+    timerDisplay.innerText = "Time Left: " + timeLeft + "s";
+    timeLeft--;
+    if(timeLeft < 0){
+        clearInterval(countdown);
+        checkScore();
+    }
+},1000);
+
+const rawText = `{{ response|safe }}`;
+const quizContainer = document.getElementById("quizContainer");
+
+let currentCard = null;
+
+rawText.split("\n").forEach(line=>{
+    line = line.trim();
+
+    if(line.startsWith("Q")){
+        currentCard = document.createElement("div");
+        currentCard.className = "quiz-card";
+        currentCard.innerHTML = "<p><strong>"+line+"</strong></p>";
+        quizContainer.appendChild(currentCard);
+    }
+
+    else if(["A)","B)","C)","D)"].some(p=>line.startsWith(p))){
+
+        if(currentCard){
+            const option = document.createElement("div");
+            option.className = "quiz-option";
+            option.textContent = line;
+
+            option.addEventListener("click", function(){
+
+    const card = option.closest(".quiz-card");
+
+    const siblings = card.querySelectorAll(".quiz-option");
+    siblings.forEach(o => o.classList.remove("selected"));
+
+    option.classList.add("selected");
+});
+
+
+            currentCard.appendChild(option);
+        }
+    }
+
+    else if(line.startsWith("Answer:")){
+        if(currentCard){
+            const correctLetter = line.split(":")[1].trim();
+            currentCard.dataset.answer = correctLetter;
+        }
+    }
+});
+
+function checkScore(){
+
+    let score = 0;
+    const cards = document.querySelectorAll(".quiz-card");
+
+    cards.forEach(card=>{
+        const selected = card.querySelector(".selected");
+        const correct = card.dataset.answer;
+
+        if(selected){
+
+            // lock options after submit
+            const options = card.querySelectorAll(".quiz-option");
+            options.forEach(opt => opt.style.pointerEvents = "none");
+
+            if(selected.textContent.startsWith(correct)){
+                selected.classList.add("correct");
+                score++;
+            }else{
+                selected.classList.add("wrong");
+
+                // highlight correct answer
+                options.forEach(opt=>{
+                    if(opt.textContent.startsWith(correct)){
+                        opt.classList.add("correct");
+                    }
+                });
+            }
+        }
+    });
+
+    document.getElementById("scoreBox").innerText =
+        "Score: " + score + " / " + cards.length;
+
+    // XP
+    let xpPercent = (score / cards.length) * 100;
+    document.getElementById("xpBar").style.width = xpPercent + "%";
+
+    if(score === cards.length){
+        document.getElementById("levelUp").style.display = "block";
+    }
+
+    fetch("/save_score",{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:`topic={{ user_input }}&score=${score}&total=${cards.length}&difficulty={{ difficulty }}`
+    });
+}
+
+
+
+</script>
+
+{% else %}
+{{ response|safe }}
+{% endif %}
+
+</div>
+{% endif %}
+
+</div>
+
+<script>
+for(let i=0;i<150;i++){
+let star=document.createElement("div");
+star.className="star";
+star.style.top=Math.random()*100+"vh";
+star.style.left=Math.random()*100+"vw";
+star.style.animationDuration=(Math.random()*3+1)+"s";
+document.body.appendChild(star);
+}
+
+const stickers=["🚀","⭐","🔥","💎","🎮"];
+setInterval(()=>{
+let sticker=document.createElement("div");
+sticker.className="sticker";
+sticker.innerText=stickers[Math.floor(Math.random()*stickers.length)];
+sticker.style.left=Math.random()*100+"vw";
+sticker.style.animationDuration=(Math.random()*5+3)+"s";
+document.body.appendChild(sticker);
+setTimeout(()=>{sticker.remove();},8000);
+},400);
+
+document.addEventListener("mousemove",(e)=>{
+let sparkle=document.createElement("div");
+sparkle.className="sparkle";
+sparkle.style.left=e.clientX+"px";
+sparkle.style.top=e.clientY+"px";
+document.body.appendChild(sparkle);
+setTimeout(()=>{sparkle.remove();},800);
+});
+</script>
+
+</body>
+</html>
