@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .hero{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .hero h1{color:#facc15}
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:16px}
+  .btn{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer}
+  .btn-alt{background:#1f2937;color:#e5e7eb;border:1px solid #334155}
+  .stats{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:10px}
+  .stat{background:#111827;border:1px solid #1f2937;border-radius:10px;padding:10px}
+  .searchbar{display:flex;gap:8px;align-items:center}
+  .searchbar input{flex:1;padding:10px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{padding:8px;border-bottom:1px solid #1f2937;text-align:left;font-size:14px}
+  .top-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+  .rank-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1f2937}
+  .rank-row:last-child{border-bottom:none}
+  @media(max-width:900px){.stats,.top-grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div>
+    <h1>{{ user['avatar'] }} Welcome, {{ user['username'] }}</h1>
+    <p style="color:#94a3b8">Private analytics + XP board + ranking.</p>
+    {% if level_info %}<p style="color:#cbd5e1;margin-top:4px">{{ level_info['icon'] }} {{ level_info['name'] }} level</p>{% endif %}
+  </div>
+  <a class="btn btn-alt" href="{{ url_for('chat') }}">Open Chat</a>
+</section>
+
+<section class="panel">
+  <div class="stats">
+    <div class="stat"><strong>XP</strong><div>{{ user['xp'] }}</div></div>
+    <div class="stat"><strong>Attempts</strong><div>{{ stats['attempts'] }}</div></div>
+    <div class="stat"><strong>Total Score</strong><div>{{ stats['total_score'] }}</div></div>
+    <div class="stat"><strong>Total Questions</strong><div>{{ stats['total_questions'] }}</div></div>
+    <div class="stat"><strong>Average %</strong><div>{{ stats['average_percent'] }}%</div></div>
+  </div>
+</section>
+
+<section class="top-grid">
+  <section class="panel">
+    <h3 style="margin-bottom:8px;color:#facc15">Private Score History</h3>
+    <form method="GET" class="searchbar">
+      <input type="text" name="q" placeholder="Search in your quiz topics..." value="{{ query }}">
+      <button class="btn btn-alt" type="submit">Search</button>
+      <a class="btn btn-alt" href="{{ url_for('dashboard') }}">Clear</a>
+    </form>
+
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Topic</th><th>Score</th><th>Difficulty</th><th>Provider</th></tr>
+      </thead>
+      <tbody>
+        {% if rows %}
+          {% for item in rows %}
+            <tr>
+              <td>{{ item['date'] }}</td>
+              <td>{{ item['topic'][:45] }}</td>
+              <td>{{ item['score'] }}/{{ item['total'] }}</td>
+              <td>{{ item['difficulty'] }}</td>
+              <td>{{ item['provider'] or '-' }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="5">No quiz records found.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h3 style="margin-bottom:8px;color:#facc15">Leaderboard</h3>
+    {% for item in leaderboard[:10] %}
+      <div class="rank-row">
+        <div>#{{ item['rank'] }} · {{ item['avatar'] }} {{ item['username'] }}</div>
+        <strong>{{ item['xp'] }} XP</strong>
+      </div>
+    {% endfor %}
+  </section>
+</section>
+{% endblock %}

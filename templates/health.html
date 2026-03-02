@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Health · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:16px}
+  .ok{color:#22c55e}.warn{color:#facc15}.bad{color:#ef4444}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(200px,1fr));gap:10px}
+  .item{background:#111827;border:1px solid #1f2937;border-radius:10px;padding:10px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 style="color:#facc15;margin-bottom:8px">System Health</h2>
+  <p style="color:#94a3b8;margin-bottom:12px">Human-readable health status page (JSON endpoint still available at <code>/healthz</code>).</p>
+  <div class="grid">
+    <div class="item"><strong>Status</strong><div class="{% if health['status'] == 'ok' %}ok{% else %}warn{% endif %}">{{ health['status'] }}</div></div>
+    <div class="item"><strong>Database</strong><div class="{% if health['database'] == 'ok' %}ok{% else %}bad{% endif %}">{{ health['database'] }}</div></div>
+    <div class="item"><strong>Gemini Configured</strong><div>{{ health['gemini_configured'] }}</div></div>
+    <div class="item"><strong>OpenRouter Configured</strong><div>{{ health['openrouter_configured'] }}</div></div>
+    <div class="item"><strong>Authenticated</strong><div>{{ health['authenticated'] }}</div></div>
+    <div class="item"><strong>Timestamp</strong><div>{{ health['timestamp'] }}</div></div>
+  </div>
+</section>
+{% endblock %}

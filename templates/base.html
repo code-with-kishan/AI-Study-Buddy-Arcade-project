@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AI Study Buddy{% endblock %}</title>
+  <style>
+    :root{
+      --bg:#070b16;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --card:#0b1220;
+      --card-2:#111827;
+      --border:#1f2937;
+      --accent:#facc15;
+      --chat-panel:#1d1336;
+      --chat-head:#2a1a4f;
+      --chat-ai:#261a45;
+      --chat-user:#1f2937;
+    }
+    body[data-theme='light']{
+      --bg:#f8fafc;
+      --text:#0f172a;
+      --muted:#475569;
+      --card:#ffffff;
+      --card-2:#f1f5f9;
+      --border:#d1d5db;
+      --accent:#2563eb;
+      --chat-panel:#eef2ff;
+      --chat-head:#e0e7ff;
+      --chat-ai:#e9edff;
+      --chat-user:#e2e8f0;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);transition:background .2s ease,color .2s ease}
+    a{text-decoration:none;color:inherit}
+    .layout{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+    .sidebar{background:var(--card);border-right:1px solid var(--border);padding:18px;position:sticky;top:0;height:100vh}
+    .brand{font-weight:800;color:var(--accent);margin-bottom:20px}
+    .avatar-badge{font-size:36px;margin-bottom:8px}
+    .small{font-size:12px;color:var(--muted)}
+    .level-pill{display:inline-block;margin-top:6px;padding:4px 8px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);font-size:12px}
+    .progress-track{height:8px;background:var(--card-2);border-radius:999px;overflow:hidden;margin-top:8px;border:1px solid var(--border)}
+    .progress-bar{height:100%;background:#22c55e}
+    .menu{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+    .menu a{padding:10px;border-radius:10px;background:var(--card-2);border:1px solid var(--border)}
+    .menu a:hover{border-color:var(--accent)}
+    .theme-toggle{margin-top:10px;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);color:var(--text);cursor:pointer;width:100%}
+    .main{padding:26px;display:flex;flex-direction:column;min-height:100vh}
+    .flash{padding:10px 12px;border-radius:8px;margin-bottom:10px;font-size:14px}
+    .flash.error{background:#3f1d1d;color:#fecaca;border:1px solid #ef4444}
+    .flash.success{background:#0f2a1d;color:#bbf7d0;border:1px solid #22c55e}
+    .footer{margin-top:auto;padding-top:14px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
+    .footer-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .owner{display:flex;flex-direction:column;gap:3px}
+    .owner strong{color:var(--text)}
+    .owner-mail{color:var(--muted)}
+    .owner-icons{display:flex;gap:8px;align-items:center}
+    .icon-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--card-2);border:1px solid var(--border);color:var(--muted);transition:all .2s ease}
+    .icon-btn:hover{border-color:var(--accent);color:var(--text);transform:translateY(-1px)}
+    .icon-btn svg{width:16px;height:16px;fill:currentColor}
+    .icon-wrap{position:relative}
+    .icon-wrap::after{
+      content:attr(data-tooltip);
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:42px;
+      background:var(--card-2);
+      color:var(--text);
+      border:1px solid var(--border);
+      font-size:11px;
+      padding:4px 7px;
+      border-radius:6px;
+      white-space:nowrap;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .2s ease;
+    }
+    .icon-wrap:hover::after{opacity:1}
+
+    .buddy-fab{
+      position:fixed;
+      right:20px;
+      bottom:120px;
+      width:58px;
+      height:58px;
+      border-radius:50%;
+      border:1px solid var(--border);
+      background:var(--card-2);
+      color:var(--text);
+      font-size:26px;
+      cursor:pointer;
+      z-index:90;
+      box-shadow:0 10px 25px rgba(0,0,0,.35);
+      animation:buddyPulse 2.2s ease-in-out infinite;
+    }
+    .buddy-fab::before,.buddy-fab::after{content:'';position:absolute;top:-7px;width:16px;height:16px;background:var(--card-2);border:1px solid var(--border);border-radius:50%}
+    .buddy-fab::before{left:9px}
+    .buddy-fab::after{right:9px}
+    @keyframes buddyPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+
+    .buddy-panel{
+      position:fixed;
+      right:20px;
+      bottom:190px;
+      width:min(340px,calc(100vw - 24px));
+      background:var(--chat-panel);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      z-index:90;
+      box-shadow:0 14px 36px rgba(0,0,0,.42);
+    }
+    .buddy-hidden{display:none}
+    .buddy-head{padding:10px 12px;background:var(--chat-head);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .buddy-head strong{color:#fcd34d}
+    .buddy-msgs{max-height:290px;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+    .buddy-msg{padding:8px 10px;border-radius:10px;line-height:1.4;font-size:13px;white-space:pre-wrap}
+    .buddy-user{background:var(--chat-user);border:1px solid var(--border);align-self:flex-end}
+    .buddy-ai{background:var(--chat-ai);border:1px solid var(--border);align-self:flex-start}
+    .buddy-quote{font-size:12px;color:#93c5fd}
+    .buddy-input-wrap{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border)}
+    .buddy-input{flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);color:var(--text)}
+    .buddy-send{padding:10px 12px;border:none;border-radius:10px;background:var(--accent);color:#111827;font-weight:700;cursor:pointer}
+
+    body[data-theme='light'] .panel,
+    body[data-theme='light'] .stat,
+    body[data-theme='light'] .rule,
+    body[data-theme='light'] .item,
+    body[data-theme='light'] .quiz-card,
+    body[data-theme='light'] .event,
+    body[data-theme='light'] .rank-row,
+    body[data-theme='light'] table,
+    body[data-theme='light'] th,
+    body[data-theme='light'] td,
+    body[data-theme='light'] input,
+    body[data-theme='light'] textarea,
+    body[data-theme='light'] select{
+      color:var(--text) !important;
+      border-color:var(--border) !important;
+    }
+    body[data-theme='light'] .panel,
+    body[data-theme='light'] .stat,
+    body[data-theme='light'] .rule,
+    body[data-theme='light'] .item,
+    body[data-theme='light'] .quiz-card,
+    body[data-theme='light'] table,
+    body[data-theme='light'] input,
+    body[data-theme='light'] textarea,
+    body[data-theme='light'] select{
+      background:var(--card) !important;
+    }
+    @media(max-width:900px){
+      .layout{grid-template-columns:1fr}
+      .sidebar{position:static;height:auto}
+      .buddy-fab{right:14px}
+      .buddy-panel{right:14px}
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="layout">
+    {% if user %}
+    <aside class="sidebar">
+      <div class="brand">AI Study Buddy</div>
+      <div class="avatar-badge">{{ user['avatar'] }}</div>
+      <div><strong>{{ user['username'] }}</strong></div>
+      <div class="small">Your private learning zone</div>
+      {% if current_level %}
+      <div class="level-pill">{{ current_level['icon'] }} {{ current_level['name'] }} · {{ user['xp'] }} XP</div>
+      <div class="progress-track"><div class="progress-bar" data-progress="{{ current_level['progress'] }}"></div></div>
+      {% endif %}
+      <nav class="menu">
+        <a href="{{ url_for('chat') }}">💬 AI Chat</a>
+        <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+        <a href="{{ url_for('profile') }}">🧩 Profile</a>
+        <a href="{{ url_for('xp_center') }}">✨ XP Center</a>
+        <a href="{{ url_for('leaderboard_page') }}">🏆 Leaderboard</a>
+        <a href="{{ url_for('export_scores_pdf') }}">📄 Score PDF</a>
+        <a href="{{ url_for('export_response_pdf') }}">📝 Response PDF</a>
+        <a href="{{ url_for('health_page') }}">🩺 Health</a>
+        <a href="{{ url_for('logout') }}">🚪 Logout</a>
+      </nav>
+      <button id="themeToggle" class="theme-toggle" type="button">🌓 Toggle Theme</button>
+    </aside>
+    {% endif %}
+
+    <main class="main">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+      <footer class="footer">
+        <div class="footer-row">
+          <div class="owner">
+            <div>© 2026 AI Study Buddy · Private by design · Built for focused study</div>
+            <strong>Owner: Kishan Nishad</strong>
+            <div class="owner-mail">knishad0004@gmail.com</div>
+          </div>
+
+          <div class="owner-icons">
+            <a class="icon-btn icon-wrap" data-tooltip="LinkedIn" href="https://www.linkedin.com/in/kishan-nishad-161a73392" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" title="LinkedIn">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.94 8.5H3.56V20h3.38V8.5zM5.25 7.03a1.97 1.97 0 1 0 0-3.94 1.97 1.97 0 0 0 0 3.94zM20.44 13.37c0-3.07-1.64-4.5-3.82-4.5-1.76 0-2.55.97-2.99 1.65V8.5h-3.38V20h3.38v-6.43c0-1.7.32-3.34 2.43-3.34 2.08 0 2.11 1.95 2.11 3.45V20h3.38v-6.63z"/></svg>
+            </a>
+
+            <a class="icon-btn icon-wrap" data-tooltip="GitHub" href="https://github.com/code-with-kishan" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.04c-3.34.73-4.04-1.41-4.04-1.41-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.74.08-.74 1.22.09 1.86 1.25 1.86 1.25 1.08 1.85 2.84 1.31 3.53 1 .11-.79.42-1.31.76-1.61-2.67-.3-5.47-1.34-5.47-5.98 0-1.32.47-2.4 1.25-3.25-.13-.3-.54-1.53.12-3.18 0 0 1.02-.33 3.34 1.24a11.59 11.59 0 0 1 6.08 0c2.32-1.57 3.33-1.24 3.33-1.24.67 1.65.25 2.88.12 3.18.78.85 1.25 1.93 1.25 3.25 0 4.65-2.81 5.67-5.49 5.97.43.37.81 1.1.81 2.22v3.29c0 .32.21.7.83.58A12 12 0 0 0 12 .5z"/></svg>
+            </a>
+
+            <a class="icon-btn icon-wrap" data-tooltip="Email" href="mailto:knishad0004@gmail.com" aria-label="Email" title="Email">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 3.2-8 5-8-5V6l8 5 8-5v1.2z"/></svg>
+            </a>
+          </div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  {% if user %}
+  <button id="buddyFab" class="buddy-fab" type="button" aria-label="Open AI helper">🐼</button>
+  <section id="buddyPanel" class="buddy-panel buddy-hidden" aria-live="polite">
+    <div class="buddy-head">
+      <strong>Cute Study Buddy</strong>
+      <button id="buddyClose" type="button" class="icon-btn" aria-label="Close helper">✕</button>
+    </div>
+    <div id="buddyMsgs" class="buddy-msgs">
+      <div class="buddy-msg buddy-ai">Hi {{ user['username'] }}! I can guide your study plan, explain doubts, and motivate you 🌟</div>
+    </div>
+    <div class="buddy-input-wrap">
+      <input id="buddyInput" class="buddy-input" type="text" placeholder="Ask for guidance...">
+      <button id="buddySend" class="buddy-send" type="button">Send</button>
+    </div>
+  </section>
+  {% endif %}
+
+  <script>
+    document.querySelectorAll('.progress-bar[data-progress]').forEach((bar)=>{
+      const value = Number(bar.dataset.progress || 0);
+      bar.style.width = `${Math.max(0, Math.min(100, value))}%`;
+    });
+
+    const storedTheme = localStorage.getItem('ui-theme') || 'dark';
+    document.body.setAttribute('data-theme', storedTheme);
+    const themeToggle = document.getElementById('themeToggle');
+    if(themeToggle){
+      themeToggle.addEventListener('click', ()=>{
+        const next = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', next);
+        localStorage.setItem('ui-theme', next);
+      });
+    }
+
+    const buddyFab = document.getElementById('buddyFab');
+    const buddyPanel = document.getElementById('buddyPanel');
+    const buddyClose = document.getElementById('buddyClose');
+    const buddyMsgs = document.getElementById('buddyMsgs');
+    const buddyInput = document.getElementById('buddyInput');
+    const buddySend = document.getElementById('buddySend');
+
+    function addBuddyMessage(text, kind='ai', extraClass=''){
+      if(!buddyMsgs) return;
+      const node = document.createElement('div');
+      node.className = `buddy-msg ${kind === 'user' ? 'buddy-user' : 'buddy-ai'} ${extraClass}`.trim();
+      node.textContent = text;
+      buddyMsgs.appendChild(node);
+      buddyMsgs.scrollTop = buddyMsgs.scrollHeight;
+    }
+
+    async function sendBuddyMessage(){
+      if(!buddyInput || !buddyInput.value.trim()) return;
+      const text = buddyInput.value.trim();
+      buddyInput.value = '';
+      addBuddyMessage(text, 'user');
+      addBuddyMessage('Thinking... 🐾', 'ai');
+
+      try{
+        const res = await fetch('/api/assistant', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ message: text, provider: 'gemini' })
+        });
+        const data = await res.json();
+        const loading = buddyMsgs.lastElementChild;
+        if(loading && loading.textContent.startsWith('Thinking')) loading.remove();
+
+        addBuddyMessage(data.reply || 'I am here to help you.');
+        if(data.quote){
+          addBuddyMessage(`✨ ${data.quote}`, 'ai', 'buddy-quote');
+        }
+        if(data.warning){
+          addBuddyMessage(data.warning, 'ai');
+        }
+      }catch(_){
+        const loading = buddyMsgs.lastElementChild;
+        if(loading && loading.textContent.startsWith('Thinking')) loading.remove();
+        addBuddyMessage('Network issue. Please try again in a moment.');
+      }
+    }
+
+    if(buddyFab && buddyPanel){
+      buddyFab.addEventListener('click', ()=>buddyPanel.classList.toggle('buddy-hidden'));
+    }
+    if(buddyClose && buddyPanel){
+      buddyClose.addEventListener('click', ()=>buddyPanel.classList.add('buddy-hidden'));
+    }
+    if(buddySend){
+      buddySend.addEventListener('click', sendBuddyMessage);
+    }
+    if(buddyInput){
+      buddyInput.addEventListener('keydown', (event)=>{
+        if(event.key === 'Enter'){
+          event.preventDefault();
+          sendBuddyMessage();
+        }
+      });
+    }
+
+    const footer = document.querySelector('.footer');
+    function positionBuddyAboveFooter(){
+      if(!footer || !buddyFab || !buddyPanel) return;
+      const offset = Math.max(footer.offsetHeight + 20, 90);
+      buddyFab.style.bottom = `${offset}px`;
+      buddyPanel.style.bottom = `${offset + 70}px`;
+    }
+    positionBuddyAboveFooter();
+    window.addEventListener('resize', positionBuddyAboveFooter);
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Chat · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .hero{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .hero h1{color:#facc15}
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:16px}
+  .chip{display:inline-block;padding:4px 8px;border-radius:999px;background:#111827;border:1px solid #334155;font-size:12px;margin-right:6px}
+  .response{line-height:1.6;white-space:pre-wrap}
+  .composer{position:sticky;bottom:12px;background:#0b1220;border:1px solid #334155;border-radius:14px;padding:12px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  .composer-top{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+  .prompt{width:100%;padding:13px;border:1px solid #334155;background:#0f172a;color:#fff;border-radius:12px;resize:vertical;min-height:56px;max-height:160px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .controls select,.controls input[type=file]{padding:9px;border-radius:10px;border:1px solid #334155;background:#111827;color:#e5e7eb}
+  .btn{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer}
+  .btn-primary{background:#facc15;color:#111827}
+  .btn-alt{background:#1f2937;color:#e5e7eb;border:1px solid #334155}
+  .two-col{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+  .rank-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1f2937}
+  .rank-row:last-child{border-bottom:none}
+  .timer{font-weight:700;color:#facc15;margin-bottom:8px}
+  .quiz-card{margin-bottom:12px;background:#111827;border:1px solid #1f2937;border-radius:10px;padding:10px}
+  .quiz-option{cursor:pointer;padding:6px 0}
+  .quiz-option:hover{color:#60a5fa}
+  .selected{color:#facc15}.correct{color:#22c55e}.wrong{color:#ef4444}
+  .xp-track{height:10px;background:#1f2937;border-radius:999px;overflow:hidden;margin-top:10px}
+  #xpBar{height:100%;width:0;background:#22c55e;transition:width .3s ease}
+  #levelUp{display:none;color:#22c55e;font-weight:700;margin-top:8px}
+  @media(max-width:900px){.two-col{grid-template-columns:1fr}.composer-top{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div>
+    <h1>💬 AI Chat Workspace</h1>
+    <p style="color:#94a3b8">Use one unified prompt bar like modern AI tools. Add text, choose mode, upload PDF, and generate.</p>
+  </div>
+  <div>
+    <span class="chip">XP: {{ user['xp'] }}</span>
+    {% if level_info %}<span class="chip">{{ level_info['icon'] }} {{ level_info['name'] }}</span>{% endif %}
+    <a class="btn btn-alt" href="{{ url_for('dashboard') }}">Open Dashboard</a>
+  </div>
+</section>
+
+<div class="two-col">
+  <section>
+    {% if api_warning %}
+      <div class="panel" style="background:#3f1d1d;border-color:#ef4444;color:#fecaca">{{ api_warning }}</div>
+    {% endif %}
+
+    {% if response %}
+      <section class="panel response">
+        {% if mode == 'quiz' %}
+          <div class="timer" id="timer"></div>
+          <div id="quizContainer"></div>
+          <div class="xp-track"><div id="xpBar"></div></div>
+          <div id="levelUp">🎉 Perfect score! Bonus XP granted on submit.</div>
+          <button class="btn btn-primary" type="button" onclick="checkScore()" style="margin-top:10px">Submit Quiz</button>
+          <div id="scoreBox" style="margin-top:8px"></div>
+          <input type="hidden" id="topicValue" value="{{ user_input|e }}">
+          <input type="hidden" id="difficultyValue" value="{{ difficulty|e }}">
+          <input type="hidden" id="providerValue" value="{{ provider|e }}">
+        {% else %}
+          {{ response|safe }}
+        {% endif %}
+      </section>
+    {% else %}
+      <section class="panel" style="color:#94a3b8">No output yet. Start by sending a prompt or PDF from the bar below.</section>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h3 style="margin-bottom:8px;color:#facc15">Top Players</h3>
+    {% for item in leaderboard %}
+      <div class="rank-row">
+        <div>#{{ item['rank'] }} · {{ item['avatar'] }} {{ item['username'] }}</div>
+        <strong>{{ item['xp'] }} XP</strong>
+      </div>
+    {% endfor %}
+  </section>
+</div>
+
+<form class="composer" method="POST" enctype="multipart/form-data">
+  <div class="composer-top">
+    <textarea class="prompt" name="topic" placeholder="Message AI Study Buddy... (or attach a PDF)" maxlength="2000">{{ user_input }}</textarea>
+    <button class="btn btn-primary" type="submit" name="action" value="generate">Send</button>
+  </div>
+
+  <div class="controls">
+    <select name="mode">
+      <option value="explain" {% if mode == 'explain' %}selected{% endif %}>Explain</option>
+      <option value="summarize" {% if mode == 'summarize' %}selected{% endif %}>Summarize</option>
+      <option value="quiz" {% if mode == 'quiz' %}selected{% endif %}>Quiz</option>
+      <option value="flashcards" {% if mode == 'flashcards' %}selected{% endif %}>Flashcards</option>
+    </select>
+
+    <select name="difficulty">
+      <option value="Easy" {% if difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+      <option value="Medium" {% if difficulty == 'Medium' %}selected{% endif %}>Medium</option>
+      <option value="Hard" {% if difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+    </select>
+
+    <select name="provider">
+      <option value="gemini" {% if provider == 'gemini' %}selected{% endif %}>Gemini</option>
+      <option value="openrouter" {% if provider == 'openrouter' %}selected{% endif %}>OpenRouter</option>
+    </select>
+
+    <input type="file" name="pdf_file" accept="application/pdf">
+    <button class="btn btn-alt" type="submit" name="action" value="pdf">Analyze PDF</button>
+    <a class="btn btn-alt" href="{{ url_for('export_response_pdf') }}">Response PDF</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+{% if response and mode == 'quiz' %}
+<script>
+let timeLeft = 60;
+const timerDisplay = document.getElementById('timer');
+const countdown = setInterval(()=>{
+  timerDisplay.innerText = `Time Left: ${timeLeft}s`;
+  timeLeft--;
+  if(timeLeft < 0){
+    clearInterval(countdown);
+    checkScore();
+  }
+},1000);
+
+const rawText = `{{ response|safe }}`;
+const quizContainer = document.getElementById('quizContainer');
+let currentCard = null;
+
+rawText.split('\n').forEach((line)=>{
+  line = line.trim();
+  if(line.startsWith('Q')){
+    currentCard = document.createElement('div');
+    currentCard.className = 'quiz-card';
+    currentCard.innerHTML = `<p><strong>${line}</strong></p>`;
+    quizContainer.appendChild(currentCard);
+  } else if(['A)','B)','C)','D)'].some(prefix => line.startsWith(prefix))){
+    if(!currentCard) return;
+    const option = document.createElement('div');
+    option.className = 'quiz-option';
+    option.textContent = line;
+    option.addEventListener('click', ()=>{
+      const card = option.closest('.quiz-card');
+      card.querySelectorAll('.quiz-option').forEach(o=>o.classList.remove('selected'));
+      option.classList.add('selected');
+    });
+    currentCard.appendChild(option);
+  } else if(line.startsWith('Answer:')){
+    if(currentCard){
+      currentCard.dataset.answer = line.split(':')[1].trim();
+    }
+  }
+});
+
+function checkScore(){
+  let score = 0;
+  const cards = document.querySelectorAll('.quiz-card');
+  cards.forEach((card)=>{
+    const selected = card.querySelector('.selected');
+    const correct = card.dataset.answer;
+    if(!selected || !correct) return;
+
+    const options = card.querySelectorAll('.quiz-option');
+    options.forEach(opt => opt.style.pointerEvents = 'none');
+
+    if(selected.textContent.startsWith(correct)){
+      selected.classList.add('correct');
+      score++;
+    } else {
+      selected.classList.add('wrong');
+      options.forEach(opt=>{
+        if(opt.textContent.startsWith(correct)) opt.classList.add('correct');
+      });
+    }
+  });
+
+  document.getElementById('scoreBox').innerText = `Score: ${score} / ${cards.length}`;
+  const xpPercent = cards.length ? (score / cards.length) * 100 : 0;
+  document.getElementById('xpBar').style.width = `${xpPercent}%`;
+  if(score === cards.length && cards.length > 0){
+    document.getElementById('levelUp').style.display = 'block';
+  }
+
+  const topicValue = document.getElementById('topicValue')?.value || '';
+  const difficultyValue = document.getElementById('difficultyValue')?.value || 'Easy';
+  const providerValue = document.getElementById('providerValue')?.value || 'unknown';
+
+  fetch('/save_score',{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:`topic=${encodeURIComponent(topicValue)}&score=${score}&total=${cards.length}&difficulty=${encodeURIComponent(difficultyValue)}&provider=${encodeURIComponent(providerValue)}`
+  }).then(()=>window.location.reload());
+}
+</script>
+{% endif %}
+{% endblock %}

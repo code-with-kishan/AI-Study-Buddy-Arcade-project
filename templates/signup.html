@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up · AI Study Buddy</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Inter,system-ui,sans-serif;background:#060b16;color:#f8fafc;min-height:100vh}
+    .wrap{width:min(560px,92vw);margin:6vh auto;background:#0b1220;border:1px solid #334155;border-radius:16px;padding:22px}
+    h1{color:#facc15;margin-bottom:8px}
+    p{color:#cbd5e1;margin-bottom:14px}
+    input{width:100%;padding:11px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;margin-bottom:10px}
+    .avatars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+    .avatar-option{background:#111827;border:1px solid #334155;border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:28px}
+    .avatar-option.active{border-color:#facc15;box-shadow:0 0 0 2px rgba(250,204,21,.2)}
+    button{width:100%;padding:11px;border:none;border-radius:10px;background:#facc15;color:#111827;font-weight:800;cursor:pointer}
+    .link{margin-top:10px;text-align:center;color:#94a3b8}
+    .link a{color:#facc15}
+    .flash{padding:10px;border-radius:8px;margin-bottom:10px}
+    .error{background:#3f1d1d;color:#fecaca;border:1px solid #ef4444}
+    .success{background:#0f2a1d;color:#bbf7d0;border:1px solid #22c55e}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <h1>Create Your Player</h1>
+    <p>Pick a secure password and choose your game avatar.</p>
+
+    <form method="POST" id="signupForm">
+      <input type="text" name="username" placeholder="Username" required minlength="3">
+      <input type="password" name="password" placeholder="Password (min 6 chars)" required minlength="6">
+
+      <input type="hidden" name="avatar" id="avatarInput" value="{{ selected_avatar }}">
+      <div class="avatars">
+        {% for avatar in avatars %}
+          <div class="avatar-option {% if avatar == selected_avatar %}active{% endif %}" data-avatar="{{ avatar }}">{{ avatar }}</div>
+        {% endfor %}
+      </div>
+
+      <button type="submit">Sign Up</button>
+    </form>
+
+    <div class="link">Already have account? <a href="{{ url_for('login') }}">Login</a></div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.avatar-option').forEach((node)=>{
+      node.addEventListener('click', ()=>{
+        document.querySelectorAll('.avatar-option').forEach(n=>n.classList.remove('active'));
+        node.classList.add('active');
+        document.getElementById('avatarInput').value = node.dataset.avatar;
+      });
+    });
+  </script>
+</body>
+</html>

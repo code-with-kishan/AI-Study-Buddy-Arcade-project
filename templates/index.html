@@ -6,18 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-{% if api_warning %}
-<div style="
-background:#3f1d1d;
-padding:12px;
-border-radius:8px;
-color:#facc15;
-margin-bottom:15px;
-font-weight:600;
-border:1px solid #facc15;">
-{{ api_warning }}
-</div>
-{% endif %}
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -213,6 +201,60 @@ button:hover{
     margin-bottom:10px;
     color:#facc15;
 }
+
+.alert-warning{
+    background:#3f1d1d;
+    padding:12px;
+    border-radius:8px;
+    color:#facc15;
+    margin-bottom:15px;
+    font-weight:600;
+    border:1px solid #facc15;
+}
+
+.xp-wrap{
+    margin-top:12px;
+    margin-bottom:14px;
+}
+
+.xp-track{
+    width:100%;
+    height:10px;
+    background:#1f2937;
+    border-radius:999px;
+    overflow:hidden;
+}
+
+#xpBar{
+    width:0%;
+    height:100%;
+    background:#22c55e;
+    transition:width 0.4s ease;
+}
+
+#levelUp{
+    display:none;
+    margin-top:10px;
+    color:#22c55e;
+    font-weight:700;
+}
+
+.dashboard{
+    margin-top:20px;
+    padding:16px;
+    border-radius:12px;
+    background:#0b1220;
+    border:1px solid #1e293b;
+}
+
+.dash-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px;}
+
+.stat-card{background:#111827;border:1px solid #1e293b;border-radius:10px;padding:10px;}
+
+.history-table{width:100%;border-collapse:collapse;font-size:13px;}
+.history-table th,.history-table td{padding:8px;border-bottom:1px solid #1f2937;text-align:left;}
 </style>
 </head>
 
@@ -223,6 +265,10 @@ button:hover{
 <div class="dragon" style="left:75%; animation-duration:25s;">🐲</div>
 
 <div class="container">
+
+{% if api_warning %}
+<div class="alert-warning">{{ api_warning }}</div>
+{% endif %}
 
 <div class="arcade-title">AI STUDY BUDDY</div>
 <div class="subtitle">Arcade Ultimate Mode Activated 🚀</div>
@@ -272,6 +318,13 @@ Choose your AI engine before generating results.
 {% if mode == "quiz" %}
 <div class="timer" id="timer"></div>
 <div id="quizContainer"></div>
+<input type="hidden" id="topicValue" value="{{ user_input|e }}">
+<input type="hidden" id="difficultyValue" value="{{ difficulty|e }}">
+<input type="hidden" id="providerValue" value="{{ provider|e }}">
+<div class="xp-wrap">
+    <div class="xp-track"><div id="xpBar"></div></div>
+    <div id="levelUp">🎉 Level Up! Perfect Score!</div>
+</div>
 <button onclick="checkScore()">Submit Quiz</button>
 <div id="scoreBox"></div>
 
@@ -374,10 +427,14 @@ function checkScore(){
         document.getElementById("levelUp").style.display = "block";
     }
 
+    const topicValue = document.getElementById("topicValue")?.value || "";
+    const difficultyValue = document.getElementById("difficultyValue")?.value || "Easy";
+    const providerValue = document.getElementById("providerValue")?.value || "unknown";
+
     fetch("/save_score",{
         method:"POST",
         headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        body:`topic={{ user_input }}&score=${score}&total=${cards.length}&difficulty={{ difficulty }}`
+        body:`topic=${encodeURIComponent(topicValue)}&score=${score}&total=${cards.length}&difficulty=${encodeURIComponent(difficultyValue)}&provider=${encodeURIComponent(providerValue)}`
     });
 }
 
@@ -391,6 +448,35 @@ function checkScore(){
 
 </div>
 {% endif %}
+
+<div class="dashboard">
+<div class="dash-actions">
+    <button type="button" onclick="loadStatsAndHistory()">Refresh Stats</button>
+    <button type="button" onclick="window.location.href='/export_scores.csv'">Export CSV</button>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card"><strong>Total Attempts</strong><div id="statAttempts">0</div></div>
+    <div class="stat-card"><strong>Total Score</strong><div id="statScore">0</div></div>
+    <div class="stat-card"><strong>Total Questions</strong><div id="statQuestions">0</div></div>
+    <div class="stat-card"><strong>Average %</strong><div id="statAverage">0%</div></div>
+</div>
+
+<table class="history-table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Topic</th>
+            <th>Score</th>
+            <th>Difficulty</th>
+            <th>Provider</th>
+        </tr>
+    </thead>
+    <tbody id="historyBody">
+        <tr><td colspan="5">No attempts yet.</td></tr>
+    </tbody>
+</table>
+</div>
 
 </div>
 
@@ -423,6 +509,42 @@ sparkle.style.top=e.clientY+"px";
 document.body.appendChild(sparkle);
 setTimeout(()=>{sparkle.remove();},800);
 });
+
+async function loadStatsAndHistory(){
+    try{
+        const [statsRes, historyRes] = await Promise.all([
+            fetch('/api/stats'),
+            fetch('/api/history?limit=8')
+        ]);
+        const stats = await statsRes.json();
+        const history = await historyRes.json();
+
+        document.getElementById('statAttempts').textContent = stats.attempts ?? 0;
+        document.getElementById('statScore').textContent = stats.total_score ?? 0;
+        document.getElementById('statQuestions').textContent = stats.total_questions ?? 0;
+        document.getElementById('statAverage').textContent = `${stats.average_percent ?? 0}%`;
+
+        const tbody = document.getElementById('historyBody');
+        if(!history.length){
+            tbody.innerHTML = '<tr><td colspan="5">No attempts yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = history.map(item => `
+            <tr>
+                <td>${item.date || '-'}</td>
+                <td>${(item.topic || '-').slice(0,40)}</td>
+                <td>${item.score}/${item.total}</td>
+                <td>${item.difficulty || '-'}</td>
+                <td>${item.provider || '-'}</td>
+            </tr>
+        `).join('');
+    }catch(error){
+        console.error('Failed to load dashboard data', error);
+    }
+}
+
+loadStatsAndHistory();
 </script>
 
 </body>

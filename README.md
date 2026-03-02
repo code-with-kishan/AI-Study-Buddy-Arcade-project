@@ -243,3 +243,130 @@ This project bridges the gap between AI-powered education and interactive gaming
 ---
 
 ⭐ If you like this project, consider giving it a star!
+
+---
+
+## ✅ Production-Ready Upgrades Included
+
+- Input validation for mode, provider, difficulty, score ranges
+- API retry/backoff for AI providers (`tenacity`)
+- Automatic Gemini quota fallback to OpenRouter
+- Secure markdown sanitization (`bleach`)
+- Basic per-IP rate limiting for POST requests
+- Security headers (`X-Frame-Options`, `X-Content-Type-Options`, etc.)
+- Health endpoint for uptime checks (`/healthz`)
+- Analytics endpoints (`/api/stats`, `/api/history`)
+- CSV export endpoint (`/export_scores.csv`)
+- SQLite index optimization on score history date
+
+---
+
+## 🆕 Advanced Product Features Added
+
+- Authentication system (`/signup`, `/login`, `/logout`)
+- User-created password for future login
+- Avatar picker at signup (game-style cartoon avatars)
+- Private-by-user analytics and score history
+- Separate app pages (`login`, `signup`, `chat`, `dashboard`, `leaderboard`, `health`)
+- Sidebar + footer layout for dashboard navigation
+- Search in personal quiz history by topic
+- PDF upload + AI processing for summary/explanation
+- XP system for each completed task and quiz submission
+- Global leaderboard ranking by XP
+- PDF export for score report (`/export_scores.pdf`)
+- PDF export for latest AI answer (`/export_response.pdf`)
+- Profile page for avatar and password updates (`/profile`)
+- XP levels and badges (Bronze → Legend)
+
+---
+
+## 🧩 New API Endpoints
+
+- `GET /healthz` → app/db/provider health status
+- `GET /api/stats` → attempts, total score, total questions, average percentage
+- `GET /api/history?limit=10` → latest quiz attempts
+- `GET /export_scores.csv` → downloadable score history
+
+---
+
+## 🔐 Environment Variables
+
+Configure these in `.env`:
+
+- `GEMINI_API_KEY`
+- `OPENROUTER_API_KEY`
+- `FLASK_SECRET_KEY`
+- `FLASK_DEBUG` (recommended: `false`)
+- `LOG_LEVEL` (recommended: `INFO`)
+- `REQUEST_TIMEOUT` (seconds)
+- `RATE_LIMIT_PER_MINUTE`
+- `DATABASE_FILE`
+- `OPENROUTER_MODEL`
+
+---
+
+## 🚀 Run in Production
+
+Use Gunicorn instead of Flask dev server:
+
+```bash
+gunicorn -w 2 -b 0.0.0.0:5000 app:app
+```
+
+---
+
+## 🐳 Docker + Nginx Deployment
+
+Production files added:
+
+- `Dockerfile`
+- `gunicorn.conf.py`
+- `nginx.conf`
+- `docker-compose.prod.yml`
+- `.dockerignore`
+
+Run with Docker Compose:
+
+```bash
+docker compose -f docker-compose.prod.yml up --build
+```
+
+Then open:
+
+- `http://localhost`
+- Health check: `http://localhost/healthz`
+
+---
+
+## ✅ CI Pipeline
+
+GitHub Actions workflow added at:
+
+- `.github/workflows/ci.yml`
+
+CI runs:
+
+- Dependency installation
+- Python compile/syntax validation
+- Automated unit tests (`tests/test_app.py`)
+
+---
+
+## ⚡ Makefile Commands
+
+Quick commands added in `Makefile`:
+
+- `make install` → install dependencies
+- `make dev` → run local app
+- `make test` → run automated tests
+- `make lint` → compile/syntax check
+- `make prod-up` → start Docker production stack
+- `make prod-down` → stop Docker production stack
+
+---
+
+## 📋 Release Checklist
+
+Production release checklist added at:
+
+- `RELEASE_CHECKLIST.md`

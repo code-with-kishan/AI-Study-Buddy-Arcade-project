@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:16px}
+  .avatars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+  .avatar-preview{width:92px;height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#111827;border:2px solid #facc15;font-size:42px;margin:10px 0}
+  .avatar-option{width:64px;height:64px;background:#111827;border:1px solid #334155;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:28px;margin:0 auto}
+  .avatar-option.active{border-color:#facc15;box-shadow:0 0 0 2px rgba(250,204,21,.2)}
+  .btn{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer}
+  .btn-primary{background:#facc15;color:#111827}
+  input,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;margin-bottom:10px}
+  textarea{min-height:120px;resize:vertical}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap}
+  .meta{color:#94a3b8;font-size:14px}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 style="color:#facc15;margin-bottom:8px">Profile Settings</h2>
+  <p class="meta">Manage your avatar and password. Your progress and XP stay linked to this account.</p>
+  {% if current_level %}<p class="meta" style="margin-top:6px">Current level: {{ current_level['icon'] }} {{ current_level['name'] }} ({{ user['xp'] }} XP)</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h3 style="margin-bottom:8px">Change Avatar</h3>
+  <div class="avatar-preview" id="avatarPreview">{{ user['avatar'] }}</div>
+  <form method="POST" id="avatarForm">
+    <input type="hidden" name="action" value="avatar">
+    <input type="hidden" name="avatar" id="avatarInput" value="{{ user['avatar'] }}">
+    <div class="avatars">
+      {% for avatar in avatars %}
+        <div class="avatar-option {% if avatar == user['avatar'] %}active{% endif %}" data-avatar="{{ avatar }}">{{ avatar }}</div>
+      {% endfor %}
+    </div>
+    <button class="btn btn-primary" type="submit">Save Avatar</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h3 style="margin-bottom:8px">Change Password</h3>
+  <form method="POST">
+    <input type="hidden" name="action" value="password">
+    <input type="password" name="current_password" placeholder="Current password" required>
+    <input type="password" name="new_password" placeholder="New password (min 6 chars)" minlength="6" required>
+    <button class="btn btn-primary" type="submit">Update Password</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h3 style="margin-bottom:8px">Owner Chatbot Memory</h3>
+  <p class="meta" style="margin-bottom:10px">This data personalizes helper replies and keeps owner highlights positive.</p>
+  <form method="POST">
+    <input type="hidden" name="action" value="owner_ai">
+
+    <input type="text" name="owner_name" placeholder="Owner name" value="{{ owner_profile['owner_name'] if owner_profile else 'Kishan Nishad' }}" required>
+    <input type="url" name="linkedin_url" placeholder="LinkedIn profile URL" value="{{ owner_profile['linkedin_url'] if owner_profile else '' }}">
+    <input type="text" name="owner_strengths" placeholder="Best strengths (comma separated)" value="{{ owner_profile['owner_strengths'] if owner_profile else '' }}">
+    <input type="text" name="owner_achievements" placeholder="Key achievements" value="{{ owner_profile['owner_achievements'] if owner_profile else '' }}">
+    <textarea name="linkedin_summary" placeholder="Paste LinkedIn About/Experience/Skills text here for better personalized answers">{{ owner_profile['linkedin_summary'] if owner_profile else '' }}</textarea>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" type="submit">Save Owner Memory</button>
+      <button class="btn" type="submit" name="import_linkedin" value="1">Import from LinkedIn URL</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.avatar-option').forEach((node)=>{
+    node.addEventListener('click', ()=>{
+      document.querySelectorAll('.avatar-option').forEach(n=>n.classList.remove('active'));
+      node.classList.add('active');
+      document.getElementById('avatarInput').value = node.dataset.avatar;
+      document.getElementById('avatarPreview').textContent = node.dataset.avatar;
+    });
+  });
+</script>
+{% endblock %}

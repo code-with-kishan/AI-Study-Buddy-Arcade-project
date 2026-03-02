@@ -1,6 +1,7 @@
 annotated-types==0.7.0
 anyio==4.12.1
 blinker==1.9.0
+bleach==6.2.0
 certifi==2026.1.4
 cffi==2.0.0
 charset-normalizer==3.4.4
@@ -27,6 +28,7 @@ pyasn1_modules==0.4.2
 pycparser==2.23
 pydantic==2.12.5
 pydantic_core==2.41.5
+pypdf==5.4.0
 python-dotenv==1.2.1
 reportlab==4.4.10
 requests==2.32.5

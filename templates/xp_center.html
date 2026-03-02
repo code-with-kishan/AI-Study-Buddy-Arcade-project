@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}XP Center · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .hero{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  .hero h1{color:#facc15}
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:14px}
+  .grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+  .xp-ring{width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;background:conic-gradient(#22c55e 0%, #1f2937 0%);position:relative;animation:spinIn 1s ease}
+  .xp-ring::after{content:'';position:absolute;width:96px;height:96px;border-radius:50%;background:#0b1220;border:1px solid #1f2937}
+  .xp-ring-label{position:relative;z-index:2;text-align:center;font-size:13px;color:#e5e7eb}
+  @keyframes spinIn{from{transform:scale(.8) rotate(-90deg);opacity:.4}to{transform:scale(1) rotate(0);opacity:1}}
+  .rules{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;margin-top:12px}
+  .rule{background:#111827;border:1px solid #334155;border-radius:10px;padding:10px;animation:fadeUp .45s ease}
+  @keyframes fadeUp{from{transform:translateY(6px);opacity:.4}to{transform:translateY(0);opacity:1}}
+  .event{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #1f2937}
+  .event:last-child{border-bottom:none}
+  .plus{color:#22c55e;font-weight:700}
+  .rank-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1f2937}
+  .rank-row:last-child{border-bottom:none}
+  @media(max-width:900px){.grid,.rules{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div>
+    <h1>✨ XP Center</h1>
+    <p style="color:#94a3b8">Separate animated hub to track your XP system, options, and gains.</p>
+  </div>
+  <a href="{{ url_for('chat') }}" style="padding:10px 14px;border-radius:10px;border:1px solid #334155;background:#1f2937">Back to Chat</a>
+</section>
+
+<div class="grid">
+  <section class="panel">
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      <div class="xp-ring" id="xpRing" data-progress="{{ level_info['progress'] }}">
+        <div class="xp-ring-label">
+          {{ level_info['icon'] }}<br>
+          {{ level_info['progress'] }}%
+        </div>
+      </div>
+      <div>
+        <h3 style="margin-bottom:6px">Current Level: {{ level_info['name'] }}</h3>
+        <div style="color:#94a3b8">Total XP: <strong style="color:#e5e7eb">{{ user['xp'] }}</strong></div>
+        {% if level_info['next_threshold'] %}
+        <div style="color:#94a3b8">Next level at: {{ level_info['next_threshold'] }} XP</div>
+        {% else %}
+        <div style="color:#22c55e">Max level reached!</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="rules">
+      <div class="rule"><strong>Explain</strong><div>+{{ xp_rules['explain'] }} XP</div></div>
+      <div class="rule"><strong>Summarize</strong><div>+{{ xp_rules['summarize'] }} XP</div></div>
+      <div class="rule"><strong>Flashcards</strong><div>+{{ xp_rules['flashcards'] }} XP</div></div>
+      <div class="rule"><strong>Quiz Generate</strong><div>+{{ xp_rules['quiz'] }} XP</div></div>
+      <div class="rule"><strong>PDF Analyze Bonus</strong><div>+{{ xp_rules['pdf_bonus'] }} XP</div></div>
+      <div class="rule"><strong>Quiz Submit Base</strong><div>+{{ xp_rules['quiz_submit_base'] }} XP</div></div>
+      <div class="rule"><strong>Per Correct Answer</strong><div>+{{ xp_rules['per_correct_answer'] }} XP</div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3 style="margin-bottom:8px;color:#facc15">Top XP Players</h3>
+    {% for item in leaderboard %}
+      <div class="rank-row">
+        <div>#{{ item['rank'] }} · {{ item['avatar'] }} {{ item['username'] }}</div>
+        <strong>{{ item['xp'] }}</strong>
+      </div>
+    {% endfor %}
+  </section>
+</div>
+
+<section class="panel">
+  <h3 style="margin-bottom:8px;color:#facc15">Recent XP Activity</h3>
+  {% if events %}
+    {% for event in events %}
+      <div class="event">
+        <div>
+          <div style="text-transform:capitalize">{{ event['action'].replace('_', ' ') }}</div>
+          <div style="font-size:12px;color:#94a3b8">{{ event['date'] }}</div>
+        </div>
+        <div class="plus">+{{ event['points'] }} XP</div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div style="color:#94a3b8">No XP activity yet. Do tasks in Chat to start earning XP.</div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const ring = document.getElementById('xpRing');
+  if(ring){
+    const progress = Math.max(0, Math.min(100, Number(ring.dataset.progress || 0)));
+    ring.style.background = `conic-gradient(#22c55e ${progress}%, #1f2937 ${progress}%)`;
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Leaderboard · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px;border-bottom:1px solid #1f2937;text-align:left}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 style="color:#facc15;margin-bottom:8px">🏆 XP Leaderboard</h2>
+  <p style="color:#94a3b8;margin-bottom:12px">Rankings are based on total XP earned from tasks and quiz performance.</p>
+  <table>
+    <thead>
+      <tr><th>Rank</th><th>Avatar</th><th>User</th><th>Level</th><th>XP</th></tr>
+    </thead>
+    <tbody>
+      {% for item in leaderboard %}
+        <tr>
+          <td>#{{ item['rank'] }}</td>
+          <td>{{ item['avatar'] }}</td>
+          <td>{{ item['username'] }}</td>
+          <td>{{ item['level']['icon'] }} {{ item['level']['name'] }}</td>
+          <td>{{ item['xp'] }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

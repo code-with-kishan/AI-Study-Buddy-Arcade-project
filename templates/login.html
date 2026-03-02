@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login · AI Study Buddy</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Inter,system-ui,sans-serif;background:radial-gradient(circle at top,#101a34,#05070f 60%);color:#f8fafc;min-height:100vh;overflow:hidden}
+    .stage{position:fixed;inset:0;pointer-events:none}
+    .character{position:absolute;font-size:46px;animation:float 8s ease-in-out infinite;opacity:.85}
+    .c1{left:8%;top:12%}.c2{left:78%;top:16%;animation-delay:1s}.c3{left:18%;top:72%;animation-delay:2s}.c4{left:72%;top:74%;animation-delay:3s}
+    @keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-18px) rotate(5deg)}}
+    .card{width:min(420px,90vw);margin:10vh auto;background:rgba(15,23,42,.82);border:1px solid #334155;border-radius:16px;padding:24px;position:relative;z-index:2;backdrop-filter:blur(6px)}
+    h1{color:#facc15;margin-bottom:8px}
+    p{color:#cbd5e1;margin-bottom:16px}
+    input{width:100%;padding:11px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#fff;margin-bottom:10px}
+    button{width:100%;padding:11px;border:none;border-radius:10px;background:#facc15;color:#111827;font-weight:800;cursor:pointer}
+    .link{margin-top:10px;text-align:center;color:#94a3b8}
+    .link a{color:#facc15}
+    .flash{padding:10px;border-radius:8px;margin-bottom:10px}
+    .error{background:#3f1d1d;color:#fecaca;border:1px solid #ef4444}
+    .success{background:#0f2a1d;color:#bbf7d0;border:1px solid #22c55e}
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="character c1">🧙</div>
+    <div class="character c2">🤖</div>
+    <div class="character c3">🐉</div>
+    <div class="character c4">👾</div>
+  </div>
+
+  <div class="card">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <h1>Welcome Back</h1>
+    <p>Login to continue your private AI learning world.</p>
+    <form method="POST">
+      <input type="text" name="username" placeholder="Username" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+    <div class="link">New here? <a href="{{ url_for('signup') }}">Create account</a></div>
+  </div>
+</body>
+</html>
