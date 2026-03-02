@@ -93,6 +93,28 @@ class AppRoutesTestCase(unittest.TestCase):
         )
         self.assertEqual(relogin.status_code, 302)
 
+    def test_profile_personalization_update(self):
+        self._signup_and_login()
+
+        personalize = self.client.post(
+            "/profile",
+            data={
+                "action": "personalize",
+                "role": "Data Analyst",
+                "bio": "Loves math and AI projects.",
+                "learning_goal": "Master statistics this month",
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(personalize.status_code, 302)
+
+        profile_page = self.client.get("/profile")
+        self.assertEqual(profile_page.status_code, 200)
+        html = profile_page.get_data(as_text=True)
+        self.assertIn("Data Analyst", html)
+        self.assertIn("Loves math and AI projects.", html)
+        self.assertIn("Master statistics this month", html)
+
     def test_save_score_and_private_stats_history_export(self):
         self._signup_and_login()
 
@@ -138,7 +160,7 @@ class AppRoutesTestCase(unittest.TestCase):
             "/profile",
             data={
                 "action": "owner_ai",
-                "owner_name": "Kishan Nishad",
+                "owner_name": "Hacked Name",
                 "linkedin_url": "",
                 "owner_strengths": "focused, disciplined, helpful",
                 "owner_achievements": "consistent learner",
@@ -159,6 +181,7 @@ class AppRoutesTestCase(unittest.TestCase):
         self.assertEqual(owner_response.status_code, 200)
         owner_data = owner_response.get_json()
         self.assertIn("Kishan Nishad is my owner", owner_data["reply"])
+        self.assertNotIn("Hacked Name is my owner", owner_data["reply"])
 
 
 if __name__ == "__main__":

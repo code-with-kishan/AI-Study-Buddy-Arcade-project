@@ -51,23 +51,25 @@
 </section>
 
 <section class="panel">
-  <h3 style="margin-bottom:8px">Owner Chatbot Memory</h3>
-  <p class="meta" style="margin-bottom:10px">This data personalizes helper replies and keeps owner highlights positive.</p>
+  <h3 style="margin-bottom:8px">Personalize Profile</h3>
+  <p class="meta" style="margin-bottom:10px">Make your profile unique so others can understand your learning identity.</p>
+
+  <div style="padding:10px;border:1px solid #334155;border-radius:10px;background:#0f172a;margin-bottom:10px">
+    <div class="meta">Profile Preview</div>
+    <p style="margin-top:6px;margin-bottom:6px"><strong>{{ user['username'] }}</strong>{% if user_profile_custom['role'] %} · {{ user_profile_custom['role'] }}{% endif %}</p>
+    {% if user_profile_custom['bio'] %}<p style="margin:0 0 6px 0">{{ user_profile_custom['bio'] }}</p>{% endif %}
+    {% if user_profile_custom['learning_goal'] %}<p class="meta" style="margin:0">Goal: {{ user_profile_custom['learning_goal'] }}</p>{% endif %}
+  </div>
+
   <form method="POST">
-    <input type="hidden" name="action" value="owner_ai">
-
-    <input type="text" name="owner_name" placeholder="Owner name" value="{{ owner_profile['owner_name'] if owner_profile else 'Kishan Nishad' }}" required>
-    <input type="url" name="linkedin_url" placeholder="LinkedIn profile URL" value="{{ owner_profile['linkedin_url'] if owner_profile else '' }}">
-    <input type="text" name="owner_strengths" placeholder="Best strengths (comma separated)" value="{{ owner_profile['owner_strengths'] if owner_profile else '' }}">
-    <input type="text" name="owner_achievements" placeholder="Key achievements" value="{{ owner_profile['owner_achievements'] if owner_profile else '' }}">
-    <textarea name="linkedin_summary" placeholder="Paste LinkedIn About/Experience/Skills text here for better personalized answers">{{ owner_profile['linkedin_summary'] if owner_profile else '' }}</textarea>
-
-    <div class="btn-row">
-      <button class="btn btn-primary" type="submit">Save Owner Memory</button>
-      <button class="btn" type="submit" name="import_linkedin" value="1">Import from LinkedIn URL</button>
-    </div>
+    <input type="hidden" name="action" value="personalize">
+    <input type="text" name="role" maxlength="80" placeholder="Your role (e.g. Student, Frontend Developer, Data Analyst)" value="{{ user_profile_custom['role'] if user_profile_custom else '' }}">
+    <textarea name="bio" maxlength="300" placeholder="Short bio (who you are and what you love learning)">{{ user_profile_custom['bio'] if user_profile_custom else '' }}</textarea>
+    <textarea name="learning_goal" maxlength="300" placeholder="Your current learning goal">{{ user_profile_custom['learning_goal'] if user_profile_custom else '' }}</textarea>
+    <button class="btn btn-primary" type="submit">Save Personalization</button>
   </form>
 </section>
+
 {% endblock %}
 
 {% block scripts %}

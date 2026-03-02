@@ -148,6 +148,19 @@ def init_db(app: Flask) -> None:
         )
         """
     )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS user_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL UNIQUE,
+            role TEXT,
+            bio TEXT,
+            learning_goal TEXT,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
 
     user_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
     if "xp" not in user_columns:
@@ -163,6 +176,7 @@ def init_db(app: Flask) -> None:
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_quiz_scores_user_id ON quiz_scores(user_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_xp ON users(xp DESC)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_owner_profiles_user_id ON owner_profiles(user_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id)")
     conn.commit()
     conn.close()
 
@@ -497,11 +511,37 @@ def get_owner_profile(app: Flask, user_id: int) -> dict:
         }
 
     return {
-        "owner_name": (row["owner_name"] or DEFAULT_OWNER_NAME).strip()[:80],
+        "owner_name": DEFAULT_OWNER_NAME,
         "linkedin_url": (row["linkedin_url"] or "").strip()[:300],
         "linkedin_summary": (row["linkedin_summary"] or "").strip()[:4000],
         "owner_strengths": (row["owner_strengths"] or "").strip()[:400],
         "owner_achievements": (row["owner_achievements"] or "").strip()[:400],
+    }
+
+
+def get_user_profile_customization(app: Flask, user_id: int) -> dict:
+    conn = get_db_connection(app)
+    row = conn.execute(
+        """
+        SELECT role, bio, learning_goal
+        FROM user_profiles
+        WHERE user_id = ?
+        """,
+        (user_id,),
+    ).fetchone()
+    conn.close()
+
+    if not row:
+        return {
+            "role": "",
+            "bio": "",
+            "learning_goal": "",
+        }
+
+    return {
+        "role": (row["role"] or "").strip()[:80],
+        "bio": (row["bio"] or "").strip()[:300],
+        "learning_goal": (row["learning_goal"] or "").strip()[:300],
     }
 
 
@@ -828,7 +868,7 @@ def register_routes(app: Flask) -> None:
                     flash("Password updated successfully.", "success")
 
             elif action == "owner_ai":
-                owner_name = (request.form.get("owner_name") or DEFAULT_OWNER_NAME).strip()[:80] or DEFAULT_OWNER_NAME
+                owner_name = DEFAULT_OWNER_NAME
                 linkedin_url = (request.form.get("linkedin_url") or "").strip()[:300]
                 owner_strengths = (request.form.get("owner_strengths") or "").strip()[:400]
                 owner_achievements = (request.form.get("owner_achievements") or "").strip()[:400]
@@ -867,12 +907,43 @@ def register_routes(app: Flask) -> None:
                 conn.commit()
                 flash("Owner chatbot memory updated.", "success")
 
+            elif action == "personalize":
+                role = (request.form.get("role") or "").strip()[:80]
+                bio = (request.form.get("bio") or "").strip()[:300]
+                learning_goal = (request.form.get("learning_goal") or "").strip()[:300]
+
+                conn.execute(
+                    """
+                    INSERT INTO user_profiles (user_id, role, bio, learning_goal, updated_at)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        role=excluded.role,
+                        bio=excluded.bio,
+                        learning_goal=excluded.learning_goal,
+                        updated_at=excluded.updated_at
+                    """,
+                    (
+                        g.user["id"],
+                        role,
+                        bio,
+                        learning_goal,
+                        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                    ),
+                )
+                conn.commit()
+                flash("Profile personalization saved.", "success")
+
             conn.close()
             return redirect(url_for("profile"))
 
         refreshed_user = get_current_user(app)
-        owner_profile = get_owner_profile(app, g.user["id"])
-        return render_template("profile.html", user=refreshed_user, avatars=AVATARS, owner_profile=owner_profile)
+        user_profile_custom = get_user_profile_customization(app, g.user["id"])
+        return render_template(
+            "profile.html",
+            user=refreshed_user,
+            avatars=AVATARS,
+            user_profile_custom=user_profile_custom,
+        )
 
     @app.route("/chat", methods=["GET", "POST"])
     @login_required
