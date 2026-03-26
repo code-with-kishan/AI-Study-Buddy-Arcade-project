@@ -17,6 +17,6 @@ RUN mkdir -p /app/data && chown -R appuser:appuser /app
 
 USER appuser
 
-EXPOSE 8000
+EXPOSE 8080
 
 CMD ["gunicorn", "-c", "gunicorn.conf.py", "app:app"]
