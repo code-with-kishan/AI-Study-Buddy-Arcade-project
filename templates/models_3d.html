@@ -61,29 +61,50 @@
   function mountViewer(id, statusId, modelSources, geometryFactory, color){
     const container = document.getElementById(id);
     const statusNode = document.getElementById(statusId);
+    if (!container) return;
+    if (!window.THREE || !THREE.WebGLRenderer) {
+      if (statusNode) statusNode.textContent = 'Preview: 3D engine unavailable in this browser';
+      return;
+    }
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#111827');
 
-    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+    const initialWidth = Math.max(1, container.clientWidth || 320);
+    const initialHeight = Math.max(1, container.clientHeight || 260);
+    const camera = new THREE.PerspectiveCamera(60, initialWidth / initialHeight, 0.1, 1000);
     camera.position.set(2,2,3);
 
     const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
-    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setSize(initialWidth, initialHeight);
     container.appendChild(renderer.domElement);
 
     let modelRoot = null;
     let fallbackAttached = false;
     let modelLoaded = false;
+    let placeholderMesh = null;
+
+    // Show immediate visual feedback so the card is never blank while GLB loads.
+    const placeholderGeo = geometryFactory();
+    const placeholderMat = new THREE.MeshStandardMaterial({color:color, wireframe:true, transparent:true, opacity:0.75});
+    placeholderMesh = new THREE.Mesh(placeholderGeo, placeholderMat);
+    scene.add(placeholderMesh);
+    if (statusNode) statusNode.textContent = 'Preview: preparing model...';
 
     function attachFallback() {
       if (fallbackAttached) return;
       fallbackAttached = true;
-      const geo = geometryFactory();
-      const mat = new THREE.MeshStandardMaterial({color:color, metalness:0.2, roughness:0.5});
-      const mesh = new THREE.Mesh(geo, mat);
-      scene.add(mesh);
-      modelRoot = mesh;
+      if (placeholderMesh) {
+        placeholderMesh.material = new THREE.MeshStandardMaterial({color:color, metalness:0.2, roughness:0.5});
+        modelRoot = placeholderMesh;
+      } else {
+        const geo = geometryFactory();
+        const mat = new THREE.MeshStandardMaterial({color:color, metalness:0.2, roughness:0.5});
+        const mesh = new THREE.Mesh(geo, mat);
+        scene.add(mesh);
+        modelRoot = mesh;
+      }
       if (statusNode) statusNode.textContent = 'Preview: demo geometry fallback';
     }
 
@@ -111,7 +132,7 @@
         settled = true;
         if (statusNode) statusNode.textContent = 'Preview: slow load, trying faster fallback ...';
         tryLoad(index + 1);
-      }, 3500);
+      }, 2200);
 
       loader.load(
         modelUrl,
@@ -125,6 +146,12 @@
             return;
           }
           modelLoaded = true;
+          if (placeholderMesh) {
+            scene.remove(placeholderMesh);
+            placeholderMesh.geometry.dispose();
+            placeholderMesh.material.dispose();
+            placeholderMesh = null;
+          }
           modelRoot = root;
           scene.add(modelRoot);
           if (statusNode) statusNode.textContent = 'Preview: loaded from ' + modelUrl.split('/').pop();
@@ -152,15 +179,17 @@
     light.position.set(3,3,2);
     scene.add(light);
 
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    const controls = (THREE.OrbitControls)
+      ? new THREE.OrbitControls(camera, renderer.domElement)
+      : { update(){}, enablePan:true, enableZoom:true };
     controls.enablePan = true;
     controls.enableZoom = true;
 
     viewers.push({scene, camera, renderer, controls, getModel: ()=>modelRoot});
 
     window.addEventListener('resize', ()=>{
-      const w = container.clientWidth;
-      const h = container.clientHeight;
+      const w = Math.max(1, container.clientWidth || 320);
+      const h = Math.max(1, container.clientHeight || 260);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -211,6 +240,13 @@
   ];
 
   function initViewers(){
+    if (!window.THREE) {
+      ['s1','s2','s3','s4'].forEach((sid)=>{
+        const node = document.getElementById(sid);
+        if (node) node.textContent = 'Preview: failed to load Three.js library';
+      });
+      return;
+    }
     configs.forEach((cfg)=>{
       const node = document.getElementById(cfg[0]);
       if(node && !node.dataset.ready){
