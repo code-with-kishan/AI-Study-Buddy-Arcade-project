@@ -11,9 +11,6 @@
   .model-detail{color:#cbd5e1;font-size:13px;line-height:1.5}
   @media(max-width:900px){.grid{grid-template-columns:1fr}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -55,14 +52,18 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script type="module">
+  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js?v=20260407';
+  import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js?v=20260407';
+  import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js?v=20260407';
+
   const viewers = [];
 
   function mountViewer(id, statusId, modelSources, geometryFactory, color){
     const container = document.getElementById(id);
     const statusNode = document.getElementById(statusId);
     if (!container) return;
-    if (!window.THREE || !THREE.WebGLRenderer) {
+    if (!THREE || !THREE.WebGLRenderer) {
       if (statusNode) statusNode.textContent = 'Preview: 3D engine unavailable in this browser';
       return;
     }
@@ -92,6 +93,39 @@
     scene.add(placeholderMesh);
     if (statusNode) statusNode.textContent = 'Preview: preparing model...';
 
+    function fitCameraToObject(object3d) {
+      const box = new THREE.Box3().setFromObject(object3d);
+      if (box.isEmpty()) return;
+
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+
+      // Normalize extreme source scales to improve visibility across different GLB exports.
+      const targetSize = 2.2;
+      const scale = targetSize / maxDim;
+      if (Number.isFinite(scale) && scale > 0) {
+        object3d.scale.setScalar(scale);
+      }
+
+      // Recompute box after scale normalization and center model at origin.
+      const normBox = new THREE.Box3().setFromObject(object3d);
+      const normCenter = normBox.getCenter(new THREE.Vector3());
+      object3d.position.sub(normCenter);
+
+      const finalBox = new THREE.Box3().setFromObject(object3d);
+      const finalSize = finalBox.getSize(new THREE.Vector3());
+      const finalMaxDim = Math.max(finalSize.x, finalSize.y, finalSize.z) || 1;
+
+      const fov = camera.fov * (Math.PI / 180);
+      const distance = (finalMaxDim / (2 * Math.tan(fov / 2))) * 1.35;
+      camera.position.set(distance * 0.85, distance * 0.72, distance);
+      camera.near = Math.max(0.01, distance / 100);
+      camera.far = Math.max(100, distance * 25);
+      camera.updateProjectionMatrix();
+      camera.lookAt(0, 0, 0);
+    }
+
     function attachFallback() {
       if (fallbackAttached) return;
       fallbackAttached = true;
@@ -108,13 +142,7 @@
       if (statusNode) statusNode.textContent = 'Preview: demo geometry fallback';
     }
 
-    if (!THREE.GLTFLoader) {
-      attachFallback();
-      if (statusNode) statusNode.textContent = 'Preview: GLTF loader unavailable, using fallback';
-      return;
-    }
-
-    const loader = new THREE.GLTFLoader();
+    const loader = new GLTFLoader();
 
     function tryLoad(index){
       if (modelLoaded) return;
@@ -153,8 +181,9 @@
             placeholderMesh = null;
           }
           modelRoot = root;
+          fitCameraToObject(modelRoot);
           scene.add(modelRoot);
-          if (statusNode) statusNode.textContent = 'Preview: loaded from ' + modelUrl.split('/').pop();
+          if (statusNode) statusNode.textContent = 'Preview: loaded file ' + modelUrl.split('/').pop();
         },
         (event)=>{
           if (settled || modelLoaded || !statusNode) return;
@@ -167,6 +196,7 @@
           if (settled || modelLoaded) return;
           settled = true;
           window.clearTimeout(timeoutId);
+          if (statusNode) statusNode.textContent = 'Preview: failed ' + modelUrl.split('/').pop() + ', trying next source...';
           tryLoad(index + 1);
         }
       );
@@ -179,8 +209,8 @@
     light.position.set(3,3,2);
     scene.add(light);
 
-    const controls = (THREE.OrbitControls)
-      ? new THREE.OrbitControls(camera, renderer.domElement)
+    const controls = (OrbitControls)
+      ? new OrbitControls(camera, renderer.domElement)
       : { update(){}, enablePan:true, enableZoom:true };
     controls.enablePan = true;
     controls.enableZoom = true;
@@ -240,7 +270,7 @@
   ];
 
   function initViewers(){
-    if (!window.THREE) {
+    if (!THREE) {
       ['s1','s2','s3','s4'].forEach((sid)=>{
         const node = document.getElementById(sid);
         if (node) node.textContent = 'Preview: failed to load Three.js library';
