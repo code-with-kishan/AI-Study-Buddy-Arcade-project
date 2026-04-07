@@ -35,7 +35,19 @@
     body{font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);transition:background .2s ease,color .2s ease;overflow-x:hidden}
     a{text-decoration:none;color:inherit}
     .layout{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
-    .sidebar{background:var(--card);border-right:1px solid var(--border);padding:18px;position:sticky;top:0;height:100vh}
+    .sidebar{
+      background:var(--card);
+      border-right:1px solid var(--border);
+      padding:18px;
+      position:sticky;
+      top:0;
+      height:100vh;
+      overflow-y:auto;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:thin;
+      touch-action:pan-y;
+    }
     .sidebar-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
     .sidebar-top .brand{margin-bottom:0}
     .sidebar-close{display:none;width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);color:var(--text);font-size:20px;line-height:1;cursor:pointer}
@@ -45,7 +57,7 @@
     .level-pill{display:inline-block;margin-top:6px;padding:4px 8px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);font-size:12px}
     .progress-track{height:8px;background:var(--card-2);border-radius:999px;overflow:hidden;margin-top:8px;border:1px solid var(--border)}
     .progress-bar{height:100%;background:#22c55e}
-    .menu{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+    .menu{display:flex;flex-direction:column;gap:10px;margin-top:20px;padding-bottom:10px}
     .menu a{padding:10px;border-radius:10px;background:var(--card-2);border:1px solid var(--border)}
     .menu a:hover{border-color:var(--accent)}
     .theme-toggle{margin-top:10px;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);color:var(--text);cursor:pointer;width:100%}
@@ -176,6 +188,9 @@
         transform:translateX(-105%);
         transition:transform .25s ease;
         overflow-y:auto;
+        overscroll-behavior:contain;
+        -webkit-overflow-scrolling:touch;
+        touch-action:pan-y;
       }
       .layout.sidebar-open .sidebar{transform:translateX(0)}
       .layout.sidebar-open .sidebar-backdrop{display:block;position:fixed;inset:0;background:rgba(2,6,23,.66);z-index:110}
@@ -337,6 +352,13 @@
     if(sidebarBackdrop){
       sidebarBackdrop.addEventListener('click', closeSidebar);
     }
+    document.querySelectorAll('.sidebar .menu a').forEach((link)=>{
+      link.addEventListener('click', ()=>{
+        if(window.innerWidth <= 900){
+          closeSidebar();
+        }
+      });
+    });
     window.addEventListener('resize', ()=>{
       if(window.innerWidth > 900){
         closeSidebar();
