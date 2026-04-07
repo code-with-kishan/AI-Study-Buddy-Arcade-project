@@ -1,121 +1,225 @@
-# AI Study Buddy (Production-Ready Flask Platform)
+<div align="center">
 
-AI Study Buddy is a full multi-page learning platform built with Flask + SQLite, featuring AI-assisted study workflows, gamified progress, tests, contests, reminders, printable reports/certificates, 3D concept previews, and deployment-ready infrastructure.
+![AI Study Buddy Banner](https://capsule-render.vercel.app/api?type=waving&height=220&color=0:0f172a,50:1d4ed8,100:0ea5e9&text=AI%20Study%20Buddy&fontColor=ffffff&fontSize=54&fontAlignY=40&desc=Your%20Private%20Premium%20Learning%20OS&descAlignY=62)
+
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Space+Grotesk&weight=700&size=24&duration=2600&pause=900&color=FACC15&center=true&vCenter=true&width=980&lines=AI+Chat+%2B+Notes+Lab+%2B+PYQ+%2B+3D+Models+%2B+Contests;Gamified+XP+Engine+with+Reports%2C+Certificates%2C+Streaks;Flask+Production+Build+Deployed+on+Render+%2B+Vercel)](https://git.io/typing-svg)
+
+[![Vercel](https://img.shields.io/badge/Live%20Frontend-Vercel-000000?style=for-the-badge&logo=vercel)](https://aistudybuddy-pi.vercel.app)
+[![Render](https://img.shields.io/badge/Live%20Backend-Render-46E3B7?style=for-the-badge&logo=render&logoColor=000)](https://aistudybuddy-pdrp.onrender.com/healthz)
+[![Flask](https://img.shields.io/badge/Backend-Flask-111827?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com/)
+[![SQLite](https://img.shields.io/badge/Database-SQLite-0B1220?style=for-the-badge&logo=sqlite)](https://www.sqlite.org/)
+[![Gemini](https://img.shields.io/badge/AI-Gemini%20%2B%20OpenRouter-1d4ed8?style=for-the-badge)](#)
+
+</div>
+
+## What Is AI Study Buddy?
+
+AI Study Buddy is a full-featured, multi-page study platform that combines AI learning workflows, gamification, test analytics, reminders, and visual learning tools in a premium UI.
+
+This project is not a simple chat app. It is a complete personal study ecosystem with:
+
+- smart AI study modes
+- notes and PDF pipelines
+- report cards and certificates
+- streak and contest systems
+- 3D model learning
+- profile personalization
+- mobile-first responsive UX
 
 ## Live Links
 
+- Frontend (Vercel): https://aistudybuddy-pi.vercel.app
+- Backend Health (Render): https://aistudybuddy-pdrp.onrender.com/healthz
 - GitHub: https://github.com/code-with-kishan/AI-Study-Buddy-Arcade-project.git
-- Deployment (Render): https://ai-study-buddy-arcade-project-dp.onrender.com
 
-## Complete Feature List
+---
 
-### 1) Public Experience
+## Feature Universe (Minor to Major)
+
+### Public Experience
 
 - Premium landing page for logged-out users.
-- Animated UI interactions on landing (card hover effects, button hover effects, cursor sparkles).
-- Built-in floating landing helper chatbot.
-- Login and signup CTA in landing navbar.
+- Animated landing interactions:
+  - flip/tilt card hover
+  - CTA hover animation
+  - cursor sparkle trail
+  - chatbot floating assistant
+- Login/signup navigation in landing header.
 
-### 2) Authentication and Access Control
+### Authentication and Access
 
-- Signup with avatar selection.
-- Login and logout flow.
-- Session-based authentication with protected routes.
-- User-specific private data separation.
+- Signup with avatar picker.
+- Login/logout flow.
+- Session-based protected routing.
+- Per-user private data isolation.
 
-### 3) Post-Login UI/UX System
+### Premium Post-Login UI System
 
-- Shared authenticated layout with sidebar + main content.
-- Premium top navbar on all authenticated pages.
-- Active-link highlighting in navbar.
-- Sidebar toggle support and mobile off-canvas drawer.
-- Strict mobile optimization to avoid overlap.
+- Shared authenticated shell.
+- Premium top navbar on after-login pages.
+- Active route highlight in top nav.A
+- Sidebar with desktop persistent mode.
+- Sidebar off-canvas drawer on mobile.
+- Sidebar toggle button and backdrop close.
+- No-overlap responsive behavior.
 - Dark/light theme toggle.
-- Floating in-app study buddy assistant panel.
 
-### 4) Core Learning Modules
+### AI Learning Core
 
-- AI Chat (`/chat`) with modes:
-  - Explain
-  - Summarize
-  - Quiz
-  - Flashcards
-- Difficulty control.
-- AI provider control (Gemini/OpenRouter with fallback behavior).
-- PDF upload + extraction for AI-assisted analysis.
+- AI Chat at `/chat` with 4 modes:
+  - explain
+  - summarize
+  - quiz
+  - flashcards
+- Difficulty controls.
+- Provider controls (Gemini/OpenRouter).
+- Provider fallback strategy.
+- PDF text extraction and AI summarization from uploaded PDFs.
 
-### 5) Notes and Study Content
+### Notes and Content Intelligence
 
-- Notes Lab (`/notes-lab`) with 3 sources:
-  - Last chat response
-  - Uploaded PDF
-  - Manual summary input
-- Teacher strictness modes (normal/strict/very_strict).
-- Handwritten-style notes PDF export.
-- Notes export history persisted in database.
+- Notes Lab (`/notes-lab`) supports:
+  - notes from last chat output
+  - notes from PDF upload
+  - notes from manual summary input
+- Teacher style modes:
+  - normal
+  - strict
+  - very_strict
+- Clean handwritten-style notes generation.
+- Notes PDF export pipeline.
+- Notes export history in DB.
 
-### 6) Topic Learning and Practice
+### Topic Learning Engine
 
-- Topic Learning (`/topic-learning`) with explanation generation.
-- Structured notes points and practice questions generation.
-- Graphs module (`/graphs`) with equation plotting and custom coordinate plotting.
-- PYQ module (`/pyq`) with exam-wise question banks and attempt tracking.
-- Demo Test (`/demo-test`) with score + weak topic analysis.
-- Mock Test (`/mock-test`) with score + weak topic analysis + suggestions.
+- Topic learning page with AI explanation generation.
+- Auto-generated concise point-wise notes.
+- Practice question generation for each topic.
+- Exam-oriented guidance tone based on strictness mode.
 
-### 7) Gamification and Progress
+### Visual Learning and Problem Solving
 
-- XP engine with event-based XP updates.
-- XP Center (`/xp-center`) with levels and ranking table.
-- Dashboard (`/dashboard`) with stats and quiz history.
-- Leaderboard APIs and leaderboard views merged into XP flow.
+- Graph module (`/graphs`) with equation plotting.
+- Custom coordinate point plotting.
+- PYQ module (`/pyq`) with exam-wise question bank.
+- Attempt cap + attempt tracking for PYQs.
+- Auto solution reveal based on attempt logic.
 
-### 8) Streaks, Contest, Reminders
+### Test and Analysis Suite
 
-- Streak page (`/streak`) with streak calendar.
-- One-hour study logging API (`/api/streak/log-hour`).
-- Weekly Contest (`/weekly-contest`) with weekly leaderboard persistence.
-- Reminders module (`/reminders`) with reminder type and date-time scheduling.
+- Demo Test module (`/demo-test`).
+- Mock Test module (`/mock-test`).
+- Score analytics with weak-topic extraction.
+- Mock test suggestions for improvement.
+- Score persistence in DB.
 
-### 9) Reporting and Certificates
+### XP, Leveling, and Competition
+
+- XP rules engine for multiple actions.
+- XP event tracking.
+- Dashboard stats and history.
+- XP Center with level ladders and badges.
+- Leaderboard API and leaderboard views merged into XP center.
+- Weekly Contest module with weekly score board.
+
+### Streak and Reminder Productivity
+
+- Study streak calendar view (`/streak`).
+- 1-hour log API (`/api/streak/log-hour`).
+- Reminder management (`/reminders`) with type/date-time.
+
+### Reporting and Credential Exports
 
 - Report Card page (`/report-card`).
-- Report Card PDF download (`/report-card.pdf`).
-- Mock certificate PDF download (`/certificate.pdf`).
-- Landscape-formatted report/certificate design.
+- Report Card PDF (`/report-card.pdf`).
+- Mock Certificate PDF (`/certificate.pdf`).
+- Landscape styled formal report/certificate templates.
 
-### 10) 3D Learning
+### 3D Concept Lab
 
 - 3D Models page (`/models-3d`).
-- GLB model preview support with fallback rendering.
-- Demo model mapping and model info display.
-- 3D performance optimizations for faster rendering.
+- GLB model loading support.
+- Fallback rendering when model fails.
+- Demo model cards with identity/details.
+- 3D rendering optimizations for smoother UX.
 
-### 11) Profile and Personalization
+### Profile, Personalization, Assistant Memory
 
-- Profile update (username/avatar/password handling).
-- Owner chatbot memory customization.
-- Personalization fields (role, bio, learning goals).
+- Profile updates for username/avatar/password.
+- User personalization fields:
+  - role
+  - bio
+  - learning goal
+- Owner profile memory for assistant responses.
 
-### 12) Reliability, Security, Operations
+### Security, Reliability, and Platform Ops
 
-- Password hashing via Werkzeug.
-- Input validation and controlled parameter sets.
-- Retry/backoff around AI provider calls.
-- Safe markdown rendering with bleach sanitization.
-- API/cache/security headers.
-- Health endpoint (`/healthz`) with DB and provider configuration status.
+- Password hashing with Werkzeug.
+- Request validation and allow-lists.
+- Rate limiting for POST endpoints.
+- Retries with exponential backoff for AI calls.
+- Safe markdown rendering with bleach.
+- Security headers and API cache controls.
+- Health endpoint with real runtime diagnostics:
+  - database status
+  - provider key status
+  - auth state
+  - timestamp
+
+---
+
+## Route Map
+
+### Pages
+
+- GET `/`
+- GET|POST `/signup`
+- GET|POST `/login`
+- GET `/logout`
+- GET|POST `/profile`
+- GET|POST `/chat`
+- GET `/dashboard`
+- GET `/xp-center`
+- GET|POST `/notes-lab`
+- GET|POST `/topic-learning`
+- GET `/graphs`
+- GET|POST `/pyq`
+- GET|POST `/demo-test`
+- GET|POST `/mock-test`
+- GET `/certificate.pdf`
+- GET `/streak`
+- GET|POST `/weekly-contest`
+- GET|POST `/reminders`
+- GET `/report-card`
+- GET `/report-card.pdf`
+- GET `/models-3d`
+
+### APIs
+
+- POST `/save_score`
+- POST `/api/assistant`
+- GET `/api/history`
+- GET `/api/stats`
+- GET `/api/leaderboard`
+- POST `/api/streak/log-hour`
+- GET `/healthz`
+
+---
 
 ## Tech Stack
 
-- Backend: Python, Flask
-- Database: SQLite
-- AI Providers: Google Gemini, OpenRouter
-- Frontend: Jinja2 templates, HTML, CSS, JavaScript
-- PDF/Doc Tooling: pypdf, reportlab, markdown, bleach
-- Reliability: tenacity
-- Production: Gunicorn, Nginx, Docker Compose
-- Testing: Python unittest
+| Layer | Stack |
+|---|---|
+| Backend | Python, Flask |
+| Database | SQLite |
+| AI | Gemini, OpenRouter |
+| Frontend | Jinja2, HTML, CSS, JavaScript |
+| PDF/Docs | pypdf, reportlab, markdown, bleach |
+| Reliability | tenacity |
+| Runtime | Gunicorn, Nginx, Docker Compose |
+| Testing | unittest |
+
+---
 
 ## Project Structure
 
@@ -129,6 +233,8 @@ AI-Study-Buddy/
 ├── docker-compose.prod.yml
 ├── gunicorn.conf.py
 ├── nginx.conf
+├── render.yaml
+├── vercel.json
 ├── templates/
 │   ├── base.html
 │   ├── index.html
@@ -156,35 +262,21 @@ AI-Study-Buddy/
 └── README.md
 ```
 
-## Environment Setup
+---
 
-1. Clone repository
+## Quickstart
 
 ```bash
 git clone https://github.com/code-with-kishan/AI-Study-Buddy-Arcade-project.git
 cd AI-Study-Buddy-Arcade-project
-```
-
-2. Create virtual environment
-
-```bash
 python3 -m venv venv
 source venv/bin/activate
-```
-
-3. Install dependencies
-
-```bash
 pip install -r requirements.txt
-```
-
-4. Create env file
-
-```bash
 cp .env.example .env
+make dev
 ```
 
-5. Configure environment variables
+### Required Environment Variables
 
 ```dotenv
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -202,127 +294,77 @@ GUNICORN_TIMEOUT=60
 GUNICORN_GRACEFUL_TIMEOUT=30
 GUNICORN_KEEPALIVE=5
 GUNICORN_BIND=0.0.0.0:8000
+
+# Vercel + Render compatibility
+SESSION_COOKIE_SECURE=true
+FRONTEND_ORIGIN=https://aistudybuddy-pi.vercel.app
+CORS_ALLOWED_ORIGINS=https://aistudybuddy-pi.vercel.app
 ```
 
-## Development Commands
+---
 
-From project root:
+## Deployment (Vercel + Render)
 
-```bash
-make install      # Install dependencies
-make dev          # Run Flask app
-make test         # Run tests
-make lint         # Compile/syntax checks
-make health       # Health check on /healthz
-make prod-up      # Start Docker production stack
-make prod-down    # Stop Docker production stack
-```
+### Production Topology
 
-Notes:
+- Frontend domain on Vercel.
+- Backend runtime on Render.
+- Vercel rewrites forward traffic to Render backend.
 
-- Default dev command runs on port 5000.
-- If macOS system services occupy 5000, run app manually on another port (for example 5050).
+### Steps
 
-## Routes and APIs
+1. Deploy backend on Render using `render.yaml`.
+2. Ensure backend env keys are configured.
+3. Set Render CORS/session values:
+   - `FRONTEND_ORIGIN=https://aistudybuddy-pi.vercel.app`
+   - `CORS_ALLOWED_ORIGINS=https://aistudybuddy-pi.vercel.app`
+4. Deploy repo on Vercel.
+5. Confirm `vercel.json` destination points to:
+   - `https://aistudybuddy-pdrp.onrender.com`
+6. Validate:
+   - app: https://aistudybuddy-pi.vercel.app
+   - health: https://aistudybuddy-pdrp.onrender.com/healthz
 
-### Page Routes
+---
 
-- GET `/`
-- GET|POST `/signup`
-- GET|POST `/login`
-- GET `/logout`
-- GET|POST `/profile`
-- GET|POST `/chat`
-- GET `/dashboard`
-- GET `/xp-center`
-- GET|POST `/notes-lab`
-- GET|POST `/topic-learning`
-- GET `/graphs`
-- GET|POST `/pyq`
-- GET|POST `/demo-test`
-- GET|POST `/mock-test`
-- GET `/certificate.pdf`
-- GET `/streak`
-- GET|POST `/weekly-contest`
-- GET|POST `/reminders`
-- GET `/report-card`
-- GET `/report-card.pdf`
-- GET `/models-3d`
-
-### API Routes
-
-- POST `/save_score`
-- POST `/api/assistant`
-- GET `/api/history`
-- GET `/api/stats`
-- GET `/api/leaderboard`
-- POST `/api/streak/log-hour`
-- GET `/healthz`
-
-## Deployment
-
-### Vercel Frontend + Render Backend (Recommended for your setup)
-
-This repository is now compatible with Vercel + Render deployment in two modes.
-
-Mode A (fastest): Vercel reverse-proxies all routes to Render backend.
-
-1. Deploy backend to Render using `render.yaml`.
-2. Set backend env vars in Render:
-  - `GEMINI_API_KEY`
-  - `OPENROUTER_API_KEY`
-  - `FLASK_SECRET_KEY`
-  - `FRONTEND_ORIGIN=https://your-vercel-domain.vercel.app`
-  - `CORS_ALLOWED_ORIGINS=https://your-vercel-domain.vercel.app`
-3. In `vercel.json`, replace:
-  - `https://YOUR-RENDER-BACKEND.onrender.com`
-  with your real Render service URL.
-4. Deploy this repo on Vercel.
-
-Result: your Vercel domain serves the app, while backend runtime stays on Render.
-
-Mode B (true split): host a separate frontend project on Vercel and call this backend as API.
-
-For Mode B, keep the same backend CORS env vars (`FRONTEND_ORIGIN` and `CORS_ALLOWED_ORIGINS`) and send credentials on frontend requests when using session auth.
-
-### Render
-
-- Live URL: https://ai-study-buddy-arcade-project-dp.onrender.com
-- Configure the same env vars as `.env.example`.
-- `render.yaml` is included for one-click Blueprint setup.
-
-### Docker Compose (Nginx + Gunicorn)
+## Dev Commands
 
 ```bash
+make install
+make dev
+make test
+make lint
+make health
 make prod-up
-```
-
-Open:
-
-- App: http://localhost
-- Health: http://localhost/healthz
-
-Stop:
-
-```bash
 make prod-down
 ```
 
-### Gunicorn only
+---
 
-```bash
-gunicorn -c gunicorn.conf.py app:app
+## Health Output Example
+
+```json
+{
+  "authenticated": false,
+  "database": "ok",
+  "gemini_configured": true,
+  "openrouter_configured": true,
+  "status": "ok",
+  "timestamp": "2026-04-07T08:28:36.226502Z"
+}
 ```
 
-## Testing
+This means backend, database, and AI keys are configured correctly.
 
-```bash
-make test
-```
+---
 
-Current tests cover auth flow, protected routes, profile updates, score/stat/history/leaderboard behavior, and assistant API behavior.
-
-## Owner
+## Maintainer
 
 - Kishan Nishad
 - LinkedIn: https://www.linkedin.com/in/kishan-nishad-161a73392
+
+<div align="center">
+
+### Built for focused learners who want results, not noise.
+
+</div>

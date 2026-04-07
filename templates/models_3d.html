@@ -58,7 +58,7 @@
 <script>
   const viewers = [];
 
-  function mountViewer(id, statusId, modelUrl, geometryFactory, color){
+  function mountViewer(id, statusId, modelSources, geometryFactory, color){
     const container = document.getElementById(id);
     const statusNode = document.getElementById(statusId);
     const scene = new THREE.Scene();
@@ -73,8 +73,11 @@
     container.appendChild(renderer.domElement);
 
     let modelRoot = null;
+    let fallbackAttached = false;
 
     function attachFallback() {
+      if (fallbackAttached) return;
+      fallbackAttached = true;
       const geo = geometryFactory();
       const mat = new THREE.MeshStandardMaterial({color:color, metalness:0.2, roughness:0.5});
       const mesh = new THREE.Mesh(geo, mat);
@@ -83,34 +86,37 @@
       if (statusNode) statusNode.textContent = 'Preview: demo geometry fallback';
     }
 
-    let loaded = false;
-    const timeoutHandle = setTimeout(()=>{
-      if(!loaded){
-        attachFallback();
-      }
-    }, 1800);
-
     const loader = new THREE.GLTFLoader();
-    loader.load(
-      modelUrl,
-      (gltf)=>{
-        loaded = true;
-        clearTimeout(timeoutHandle);
-        modelRoot = gltf.scene;
-        if (!modelRoot || modelRoot.children.length === 0) {
-          attachFallback();
-          return;
-        }
-        scene.add(modelRoot);
-        if (statusNode) statusNode.textContent = 'Preview: loaded from ' + modelUrl.split('/').pop();
-      },
-      undefined,
-      ()=>{
-        loaded = true;
-        clearTimeout(timeoutHandle);
+
+    function tryLoad(index){
+      if(index >= modelSources.length){
         attachFallback();
+        return;
       }
-    );
+
+      const modelUrl = modelSources[index];
+      if (statusNode) statusNode.textContent = 'Preview: loading ' + modelUrl.split('/').pop() + ' ...';
+
+      loader.load(
+        modelUrl,
+        (gltf)=>{
+          const root = gltf.scene;
+          if (!root || root.children.length === 0) {
+            tryLoad(index + 1);
+            return;
+          }
+          modelRoot = root;
+          scene.add(modelRoot);
+          if (statusNode) statusNode.textContent = 'Preview: loaded from ' + modelUrl.split('/').pop();
+        },
+        undefined,
+        ()=>{
+          tryLoad(index + 1);
+        }
+      );
+    }
+
+    tryLoad(0);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.8));
     const light = new THREE.DirectionalLight(0xffffff, 1);
@@ -133,10 +139,46 @@
   }
 
   const configs = [
-    ['v1', 's1', '/static/models/demo1.glb', ()=>new THREE.TorusKnotGeometry(0.8,0.24,120,16), '#f59e0b'],
-    ['v2', 's2', '/static/models/demo2.glb', ()=>new THREE.SphereGeometry(1,32,32), '#22c55e'],
-    ['v3', 's3', '/static/models/demo3.glb', ()=>new THREE.ConeGeometry(1,2,32), '#0ea5e9'],
-    ['v4', 's4', '/static/models/demo4.glb', ()=>new THREE.BoxGeometry(1.8,1.8,1.8), '#a855f7']
+    [
+      'v1',
+      's1',
+      [
+        'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Duck/glTF-Binary/Duck.glb',
+        '/static/models/demo1.glb'
+      ],
+      ()=>new THREE.TorusKnotGeometry(0.8,0.24,120,16),
+      '#f59e0b'
+    ],
+    [
+      'v2',
+      's2',
+      [
+        'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Avocado/glTF-Binary/Avocado.glb',
+        '/static/models/demo2.glb'
+      ],
+      ()=>new THREE.SphereGeometry(1,32,32),
+      '#22c55e'
+    ],
+    [
+      'v3',
+      's3',
+      [
+        'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
+        '/static/models/demo3.glb'
+      ],
+      ()=>new THREE.ConeGeometry(1,2,32),
+      '#0ea5e9'
+    ],
+    [
+      'v4',
+      's4',
+      [
+        'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/BoomBox/glTF-Binary/BoomBox.glb',
+        '/static/models/demo4.glb'
+      ],
+      ()=>new THREE.BoxGeometry(1.8,1.8,1.8),
+      '#a855f7'
+    ]
   ];
 
   // Lazy create viewers only when cards are near viewport to improve first paint speed.

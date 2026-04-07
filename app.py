@@ -1,5 +1,5 @@
 from collections import defaultdict, deque
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from functools import wraps
 from pathlib import Path
 import io
@@ -28,6 +28,11 @@ from werkzeug.security import check_password_hash, generate_password_hash
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
+
+# Helper to get current UTC time without deprecation warning
+def get_utc_now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 ALLOWED_MODES = {"explain", "summarize", "quiz", "flashcards"}
 ALLOWED_DIFFICULTIES = {"Easy", "Medium", "Hard"}
 ALLOWED_PROVIDERS = {"gemini", "openrouter"}
@@ -404,7 +409,7 @@ def add_xp(app: Flask, user_id: int, points: int, action: str) -> int:
     conn.execute("UPDATE users SET xp = xp + ? WHERE id = ?", (safe_points, user_id))
     conn.execute(
         "INSERT INTO xp_events (user_id, action, points, date) VALUES (?, ?, ?, ?)",
-        (user_id, action, safe_points, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
+        (user_id, action, safe_points, get_utc_now().strftime("%Y-%m-%d %H:%M:%S")),
     )
     current = conn.execute("SELECT xp FROM users WHERE id = ?", (user_id,)).fetchone()
     conn.commit()
@@ -460,7 +465,7 @@ def strip_html(text: str) -> str:
 
 
 def get_week_key() -> str:
-    return datetime.utcnow().strftime("%Y-W%U")
+    return get_utc_now().strftime("%Y-W%U")
 
 
 def _draw_notebook_background(pdf: canvas.Canvas, width: float, height: float) -> None:
@@ -505,53 +510,109 @@ def build_handwritten_notes_pdf(title: str, content: str, student_name: str) -> 
     chunk = []
     for line in lines:
         chunk.append(line)
-        if len(chunk) >= 22:
+        if len(chunk) >= 20:
             pages.append(chunk)
             chunk = []
     if chunk:
         pages.append(chunk)
 
-    palette = [
-        colors.HexColor("#7c3aed"),
-        colors.HexColor("#db2777"),
-        colors.HexColor("#0ea5e9"),
-        colors.HexColor("#16a34a"),
-        colors.HexColor("#ea580c"),
+    # Enhanced vibrant color palette for better visual appeal
+    primary_palette = [
+        colors.HexColor("#7c3aed"),      # Purple
+        colors.HexColor("#0ea5e9"),      # Cyan
+        colors.HexColor("#16a34a"),      # Green
+        colors.HexColor("#ea580c"),      # Orange
+        colors.HexColor("#db2777"),      # Pink
+        colors.HexColor("#dc2626"),      # Red
+        colors.HexColor("#2563eb"),      # Blue
+        colors.HexColor("#a16207"),      # Brown
+    ]
+    
+    secondary_palette = [
+        colors.HexColor("#e7d4f5"),      # Light Purple bg
+        colors.HexColor("#cffafe"),      # Light Cyan bg
+        colors.HexColor("#dcfce7"),      # Light Green bg
+        colors.HexColor("#fed7aa"),      # Light Orange bg
+        colors.HexColor("#fce7f3"),      # Light Pink bg
     ]
 
-    for page_lines in pages:
+    for page_idx, page_lines in enumerate(pages):
         _draw_notebook_background(pdf, width, height)
 
+        # Rotating color header background for visual interest
+        header_bg_color = secondary_palette[(page_idx) % len(secondary_palette)]
+        header_text_color = primary_palette[(page_idx) % len(primary_palette)]
+        
+        # Draw header background rectangle
+        pdf.setFillColor(header_bg_color)
+        pdf.rect(80, height - 95, width - 120, 50, fill=1, stroke=0)
+
+        # Watermark on spine
         pdf.saveState()
         pdf.translate(20, height / 2)
         pdf.rotate(90)
-        pdf.setFillColor(colors.HexColor("#0f172a"))
-        pdf.setFont("Helvetica-Bold", 11)
+        pdf.setFillColor(colors.HexColor("#e0e7ff"))
+        pdf.setFont("Helvetica-Bold", 10)
         pdf.drawString(0, 0, "AI Study Buddy")
         pdf.restoreState()
 
-        pdf.setFillColor(colors.HexColor("#1f2937"))
-        pdf.setFont("Helvetica-Bold", 20)
-        pdf.drawString(90, height - 55, title[:60])
+        # Title with enhanced styling
+        pdf.setFillColor(header_text_color)
+        pdf.setFont("Helvetica-Bold", 22)
+        pdf.drawString(90, height - 55, title[:55])
+        
+        # Subtitle with student name
         pdf.setFont("Helvetica-Oblique", 11)
-        pdf.setFillColor(colors.HexColor("#334155"))
-        pdf.drawString(90, height - 75, f"Student: {student_name}")
+        pdf.setFillColor(colors.HexColor("#475569"))
+        pdf.drawString(90, height - 78, f"📚 {student_name}")
 
-        y = height - 110
+        # Draw decorative line below header
+        pdf.setStrokeColor(header_text_color)
+        pdf.setLineWidth(2)
+        pdf.line(85, height - 95, width - 40, height - 95)
+
+        y = height - 120
         for i, line in enumerate(page_lines):
-            color = palette[i % len(palette)]
+            # Alternate between primary and secondary colors for visual rhythm
+            is_alt = i % 2
+            color = primary_palette[i % len(primary_palette)]
+            
+            # Draw subtle alternating background
+            if is_alt:
+                pdf.setFillColor(colors.HexColor("#f8fafc"))
+                pdf.rect(85, y - 14, width - 125, 18, fill=1, stroke=0)
+            
+            # Draw bullet point or number
+            pdf.setFillColor(color)
+            pdf.setFont("Helvetica-Bold", 11)
+            pdf.drawString(88, y, "●")
+            
+            # Draw text
             pdf.setFillColor(color)
             pdf.setFont("Helvetica-Oblique", 12)
-            safe_line = line[:92]
-            pdf.drawString(90, y, safe_line)
-            if i % 5 == 0:
-                pdf.setStrokeColor(colors.HexColor("#f59e0b"))
-                pdf.line(84, y - 2, width - 40, y - 2)
+            safe_line = line[:90]
+            pdf.drawString(100, y, safe_line)
+            
+            # Draw decorative separators every 5 lines
+            if (i + 1) % 6 == 0:
+                sep_color = secondary_palette[(i // 6) % len(secondary_palette)]
+                pdf.setStrokeColor(sep_color)
+                pdf.setLineWidth(1)
+                pdf.line(85, y - 18, width - 40, y - 18)
+            
             y -= 24
 
-        pdf.setFont("Helvetica-Bold", 10)
+        # Footer with enhanced styling
+        footer_y = 30
         pdf.setFillColor(colors.HexColor("#0f172a"))
-        pdf.drawString(40, 24, "Owner: Kishan Nishad (AI Study Buddy)")
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(40, footer_y, "✨ AI Study Buddy · Exam-Ready Notes")
+        pdf.setFont("Helvetica", 8)
+        pdf.setFillColor(colors.HexColor("#64748b"))
+        page_num = (page_idx + 1)
+        total_pages = len(pages)
+        pdf.drawString(width - 110, footer_y, f"Page {page_num} of {total_pages}")
+        
         pdf.showPage()
 
     pdf.save()
@@ -608,7 +669,7 @@ def build_certificate_pdf(student_name: str, score: int, total: int) -> bytes:
 
     pdf.setFillColor(colors.HexColor("#334155"))
     pdf.setFont("Helvetica", 10)
-    doc_id = f"ASB-CERT-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    doc_id = f"ASB-CERT-{get_utc_now().strftime('%Y%m%d%H%M%S')}"
     pdf.drawString(70, 88, f"Document ID: {doc_id}")
     pdf.drawString(70, 72, "Status: Digitally authorized for AI Study Buddy Academic Records")
 
@@ -694,7 +755,7 @@ def build_report_card_pdf(student_name: str, accuracy: float, tests: list, weak_
     if not tests:
         pdf.drawString(width / 2 + 20, y, "No recent tests available.")
 
-    doc_id = f"ASB-RPT-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    doc_id = f"ASB-RPT-{get_utc_now().strftime('%Y%m%d%H%M%S')}"
     pdf.setFillColor(colors.HexColor("#334155"))
     pdf.setFont("Helvetica", 10)
     pdf.drawString(46, 64, f"Document ID: {doc_id}")
@@ -748,7 +809,7 @@ def compute_streak_count(calendar_rows: list[dict]) -> int:
         return 0
     day_minutes = {row["date"]: row["minutes"] for row in calendar_rows}
     streak = 0
-    cursor = datetime.utcnow().date()
+    cursor = get_utc_now().date()
     while True:
         day_key = cursor.strftime("%Y-%m-%d")
         if day_minutes.get(day_key, 0) >= 60:
@@ -822,7 +883,7 @@ def register_hooks(app: Flask) -> None:
             return None
 
         client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "local")
-        now = datetime.utcnow().timestamp()
+        now = get_utc_now().timestamp()
         limit = app.config["RATE_LIMIT_PER_MINUTE"]
 
         with REQUEST_LOCK:
@@ -1181,9 +1242,14 @@ def generate_ai_response(topic: str, mode: str, difficulty: str, provider: str, 
         raw_response = call_provider(selected_provider)
     except Exception:
         alternate = "openrouter" if selected_provider == "gemini" else "gemini"
-        raw_response = call_provider(alternate)
-        warning = f"⚠️ {selected_provider.title()} unavailable. Switched to {alternate.title()} backup."
-        selected_provider = alternate
+        try:
+            raw_response = call_provider(alternate)
+            warning = f"⚠️ {selected_provider.title()} unavailable. Switched to {alternate.title()} backup."
+            selected_provider = alternate
+        except Exception:
+            raw_response = local_guidance_response(topic)
+            warning = "⚠️ Live AI providers are temporarily unavailable. Showing local study guidance response."
+            selected_provider = "local"
 
     output = raw_response if mode == "quiz" else sanitize_markdown(raw_response)
     return output, selected_provider, warning, raw_response
@@ -1278,7 +1344,7 @@ def register_routes(app: Flask) -> None:
                         generate_password_hash(password, method="pbkdf2:sha256"),
                         avatar,
                         0,
-                        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                        get_utc_now().strftime("%Y-%m-%d %H:%M:%S"),
                     ),
                 )
                 conn.commit()
@@ -1393,7 +1459,7 @@ def register_routes(app: Flask) -> None:
                         linkedin_summary,
                         owner_strengths,
                         owner_achievements,
-                        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                        get_utc_now().strftime("%Y-%m-%d %H:%M:%S"),
                     ),
                 )
                 conn.commit()
@@ -1419,7 +1485,7 @@ def register_routes(app: Flask) -> None:
                         role,
                         bio,
                         learning_goal,
-                        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                        get_utc_now().strftime("%Y-%m-%d %H:%M:%S"),
                     ),
                 )
                 conn.commit()
@@ -1572,7 +1638,7 @@ def register_routes(app: Flask) -> None:
                 total,
                 difficulty,
                 provider,
-                datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                get_utc_now().strftime("%Y-%m-%d %H:%M:%S"),
             ),
         )
         conn.commit()
@@ -1716,7 +1782,7 @@ def register_routes(app: Flask) -> None:
                         action,
                         title,
                         source_text[:12000],
-                        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                        get_utc_now().strftime("%Y-%m-%d %H:%M:%S"),
                     ),
                 )
                 conn.commit()
@@ -1864,7 +1930,7 @@ def register_routes(app: Flask) -> None:
                         next_attempt,
                         answer,
                         is_correct,
-                        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                        get_utc_now().strftime("%Y-%m-%d %H:%M:%S"),
                     ),
                 )
                 conn.commit()
@@ -1924,7 +1990,7 @@ def register_routes(app: Flask) -> None:
                     score,
                     len(DEMO_TEST_BANK),
                     json.dumps(weak_topics),
-                    datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                    get_utc_now().strftime("%Y-%m-%d %H:%M:%S"),
                 ),
             )
             conn.commit()
@@ -1972,7 +2038,7 @@ def register_routes(app: Flask) -> None:
                     score,
                     len(MOCK_TEST_BANK),
                     json.dumps(weak_topics),
-                    datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                    get_utc_now().strftime("%Y-%m-%d %H:%M:%S"),
                 ),
             )
             conn.commit()
@@ -2029,7 +2095,7 @@ def register_routes(app: Flask) -> None:
     @app.post("/api/streak/log-hour")
     @login_required
     def streak_log_hour():
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = get_utc_now().strftime("%Y-%m-%d")
         conn = get_db_connection(app)
         conn.execute(
             """
@@ -2038,7 +2104,7 @@ def register_routes(app: Flask) -> None:
             ON CONFLICT(user_id, date) DO UPDATE SET
                 minutes = minutes + 60
             """,
-            (g.user["id"], today, 60, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
+            (g.user["id"], today, 60, get_utc_now().strftime("%Y-%m-%d %H:%M:%S")),
         )
         conn.commit()
         conn.close()
@@ -2079,7 +2145,7 @@ def register_routes(app: Flask) -> None:
                     week_key,
                     score,
                     len(CONTEST_BANK),
-                    datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                    get_utc_now().strftime("%Y-%m-%d %H:%M:%S"),
                 ),
             )
             conn.commit()
@@ -2130,7 +2196,7 @@ def register_routes(app: Flask) -> None:
                         title,
                         reminder_type,
                         remind_at,
-                        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                        get_utc_now().strftime("%Y-%m-%d %H:%M:%S"),
                     ),
                 )
                 conn.commit()
@@ -2205,7 +2271,7 @@ def register_routes(app: Flask) -> None:
                 "gemini_configured": bool(os.getenv("GEMINI_API_KEY")),
                 "openrouter_configured": bool(os.getenv("OPENROUTER_API_KEY")),
                 "authenticated": bool(g.user),
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": get_utc_now().isoformat() + "Z",
             }
         )
 
