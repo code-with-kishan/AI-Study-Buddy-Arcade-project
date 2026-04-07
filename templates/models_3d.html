@@ -74,6 +74,7 @@
 
     let modelRoot = null;
     let fallbackAttached = false;
+    let modelLoaded = false;
 
     function attachFallback() {
       if (fallbackAttached) return;
@@ -86,9 +87,16 @@
       if (statusNode) statusNode.textContent = 'Preview: demo geometry fallback';
     }
 
+    if (!THREE.GLTFLoader) {
+      attachFallback();
+      if (statusNode) statusNode.textContent = 'Preview: GLTF loader unavailable, using fallback';
+      return;
+    }
+
     const loader = new THREE.GLTFLoader();
 
     function tryLoad(index){
+      if (modelLoaded) return;
       if(index >= modelSources.length){
         attachFallback();
         return;
@@ -97,20 +105,41 @@
       const modelUrl = modelSources[index];
       if (statusNode) statusNode.textContent = 'Preview: loading ' + modelUrl.split('/').pop() + ' ...';
 
+      let settled = false;
+      const timeoutId = window.setTimeout(()=>{
+        if (settled || modelLoaded) return;
+        settled = true;
+        if (statusNode) statusNode.textContent = 'Preview: slow load, trying faster fallback ...';
+        tryLoad(index + 1);
+      }, 3500);
+
       loader.load(
         modelUrl,
         (gltf)=>{
+          if (settled || modelLoaded) return;
+          settled = true;
+          window.clearTimeout(timeoutId);
           const root = gltf.scene;
           if (!root || root.children.length === 0) {
             tryLoad(index + 1);
             return;
           }
+          modelLoaded = true;
           modelRoot = root;
           scene.add(modelRoot);
           if (statusNode) statusNode.textContent = 'Preview: loaded from ' + modelUrl.split('/').pop();
         },
-        undefined,
+        (event)=>{
+          if (settled || modelLoaded || !statusNode) return;
+          if (event && event.lengthComputable && event.total > 0) {
+            const pct = Math.min(99, Math.round((event.loaded / event.total) * 100));
+            statusNode.textContent = 'Preview: loading ' + modelUrl.split('/').pop() + ' (' + pct + '%)';
+          }
+        },
         ()=>{
+          if (settled || modelLoaded) return;
+          settled = true;
+          window.clearTimeout(timeoutId);
           tryLoad(index + 1);
         }
       );
@@ -181,24 +210,21 @@
     ]
   ];
 
-  // Lazy create viewers only when cards are near viewport to improve first paint speed.
-  const observer = new IntersectionObserver((entries)=>{
-    entries.forEach((entry)=>{
-      if(!entry.isIntersecting) return;
-      const id = entry.target.id;
-      const cfg = configs.find(c=>c[0] === id);
-      if(cfg && !entry.target.dataset.ready){
+  function initViewers(){
+    configs.forEach((cfg)=>{
+      const node = document.getElementById(cfg[0]);
+      if(node && !node.dataset.ready){
         mountViewer(...cfg);
-        entry.target.dataset.ready = '1';
+        node.dataset.ready = '1';
       }
-      observer.unobserve(entry.target);
     });
-  }, {rootMargin: '180px'});
+  }
 
-  configs.forEach((cfg)=>{
-    const node = document.getElementById(cfg[0]);
-    if(node) observer.observe(node);
-  });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initViewers);
+  } else {
+    initViewers();
+  }
 
   function animateAll(){
     requestAnimationFrame(animateAll);
