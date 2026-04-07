@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Report Card · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .card{background:linear-gradient(135deg,#0b1220,#312e81);border:1px solid #1f2937;border-radius:14px;padding:18px;margin-bottom:14px}
+  .metrics{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:10px}
+  .metric{background:#111827;border:1px solid #334155;border-radius:10px;padding:10px}
+  .weak{display:inline-block;padding:5px 9px;border-radius:999px;background:#7f1d1d;border:1px solid #ef4444;margin:4px;color:#fee2e2}
+  .row{padding:8px 0;border-bottom:1px solid #334155}
+  .signature{margin-top:16px;text-align:right;color:#fde68a;font-weight:700}
+  @media(max-width:900px){.metrics{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2 style="color:#facc15;margin-bottom:8px">📋 Colorful Performance Report Card</h2>
+  <p style="color:#cbd5e1;margin-bottom:10px">Authorized academic summary with theory-backed learning interpretation and performance insights.</p>
+  <a href="{{ url_for('report_card_pdf') }}" style="display:inline-block;margin-bottom:12px;padding:10px 14px;border-radius:10px;background:#facc15;color:#111827;text-decoration:none;font-weight:700">Download Report PDF</a>
+  <div class="metrics">
+    <div class="metric"><strong>Student</strong><div>{{ user['username'] }}</div></div>
+    <div class="metric"><strong>Total Tests</strong><div>{{ tests|length }}</div></div>
+    <div class="metric"><strong>Overall Accuracy</strong><div>{{ accuracy }}%</div></div>
+  </div>
+
+  <h3 style="color:#facc15;margin:12px 0 8px">Theory-Based Evaluation</h3>
+  <div class="row">Retrieval Practice Theory: Frequent test recall improves long-term memory retention.</div>
+  <div class="row">Spaced Revision Theory: Distributed revision sessions improve concept recall under exam pressure.</div>
+  <div class="row">Error Correction Theory: Reviewing mistakes strengthens weak pathways and lifts consistency.</div>
+
+  <h3 style="color:#facc15;margin:12px 0 8px">Weak Topics</h3>
+  <div>
+    {% for topic in weak_topics[:8] %}<span class="weak">{{ topic }}</span>{% endfor %}
+  </div>
+
+  <h3 style="color:#facc15;margin:12px 0 8px">Recent Test Records</h3>
+  {% for t in tests %}
+    <div class="row">{{ t['created_at'] }} · {{ t['test_type']|upper }} · Score {{ t['score'] }}/{{ t['total'] }}</div>
+  {% else %}
+    <div class="row">No test records yet.</div>
+  {% endfor %}
+
+  <div class="signature">Kishan Nishad (Owner)</div>
+</section>
+{% endblock %}

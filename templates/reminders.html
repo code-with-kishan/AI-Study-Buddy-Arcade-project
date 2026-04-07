@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Reminders · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:14px}
+  input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;margin-bottom:10px}
+  .btn{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer;background:#facc15;color:#111827}
+  .item{background:#111827;border:1px solid #334155;border-radius:10px;padding:10px;margin-bottom:8px}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 style="color:#facc15;margin-bottom:8px">⏰ Smart Reminder System</h2>
+  <form method="POST">
+    <input type="text" name="title" placeholder="Reminder title (e.g. Physics Revision Session)" required>
+    <select name="reminder_type">
+      <option value="study">Study Session</option>
+      <option value="test">Test</option>
+      <option value="revision">Revision</option>
+    </select>
+    <input type="datetime-local" name="remind_at" required>
+    <button class="btn" type="submit">Save Reminder</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h3 style="color:#facc15;margin-bottom:8px">Upcoming Reminders</h3>
+  {% for item in reminders %}
+    <div class="item">
+      <div><strong>{{ item['title'] }}</strong></div>
+      <div style="color:#93c5fd">Type: {{ item['reminder_type'] }}</div>
+      <div style="color:#94a3b8">At: {{ item['remind_at'] }}</div>
+    </div>
+  {% else %}
+    <p style="color:#94a3b8">No reminders yet.</p>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: ai-study-buddy-backend
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -c gunicorn.conf.py app:app
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: FLASK_DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: "INFO"
+      - key: REQUEST_TIMEOUT
+        value: "25"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "45"
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: DATABASE_FILE
+        value: "data/database.db"
+      - key: FRONTEND_ORIGIN
+        value: ""
+      - key: CORS_ALLOWED_ORIGINS
+        value: ""
+    disks:
+      - name: data
+        mountPath: /opt/render/project/src/data
+        sizeGB: 1

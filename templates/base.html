@@ -32,10 +32,13 @@
       --chat-user:#e2e8f0;
     }
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);transition:background .2s ease,color .2s ease}
+    body{font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);transition:background .2s ease,color .2s ease;overflow-x:hidden}
     a{text-decoration:none;color:inherit}
     .layout{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
     .sidebar{background:var(--card);border-right:1px solid var(--border);padding:18px;position:sticky;top:0;height:100vh}
+    .sidebar-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .sidebar-top .brand{margin-bottom:0}
+    .sidebar-close{display:none;width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);color:var(--text);font-size:20px;line-height:1;cursor:pointer}
     .brand{font-weight:800;color:var(--accent);margin-bottom:20px}
     .avatar-badge{font-size:36px;margin-bottom:8px}
     .small{font-size:12px;color:var(--muted)}
@@ -47,6 +50,15 @@
     .menu a:hover{border-color:var(--accent)}
     .theme-toggle{margin-top:10px;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);color:var(--text);cursor:pointer;width:100%}
     .main{padding:26px;display:flex;flex-direction:column;min-height:100vh}
+    .topbar{position:sticky;top:0;z-index:80;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--border);background:rgba(11,18,32,.9);border-radius:14px;margin-bottom:14px}
+    .topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
+    .sidebar-toggle{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto}
+    .top-title{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+    .top-links{display:flex;align-items:center;gap:8px;overflow:auto;padding-bottom:2px}
+    .top-links a{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);font-size:13px;white-space:nowrap;transition:transform .2s ease,border-color .2s ease}
+    .top-links a:hover{transform:translateY(-1px);border-color:var(--accent)}
+    .top-links a.active{border-color:var(--accent);color:var(--text)}
+    .main-content{display:flex;flex-direction:column;min-height:calc(100vh - 120px)}
     .flash{padding:10px 12px;border-radius:8px;margin-bottom:10px;font-size:14px}
     .flash.error{background:#3f1d1d;color:#fecaca;border:1px solid #ef4444}
     .flash.success{background:#0f2a1d;color:#bbf7d0;border:1px solid #22c55e}
@@ -123,6 +135,7 @@
     .buddy-input-wrap{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border)}
     .buddy-input{flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);color:var(--text)}
     .buddy-send{padding:10px 12px;border:none;border-radius:10px;background:var(--accent);color:#111827;font-weight:700;cursor:pointer}
+    .sidebar-backdrop{display:none}
 
     body[data-theme='light'] .panel,
     body[data-theme='light'] .stat,
@@ -152,8 +165,27 @@
       background:var(--card) !important;
     }
     @media(max-width:900px){
-      .layout{grid-template-columns:1fr}
-      .sidebar{position:static;height:auto}
+      .layout{display:block;min-height:100vh}
+      .sidebar{
+        position:fixed;
+        top:0;
+        left:0;
+        height:100dvh;
+        width:min(84vw,320px);
+        z-index:120;
+        transform:translateX(-105%);
+        transition:transform .25s ease;
+        overflow-y:auto;
+      }
+      .layout.sidebar-open .sidebar{transform:translateX(0)}
+      .layout.sidebar-open .sidebar-backdrop{display:block;position:fixed;inset:0;background:rgba(2,6,23,.66);z-index:110}
+      .sidebar-close{display:inline-flex;align-items:center;justify-content:center}
+      .main{padding:14px}
+      .topbar{padding:9px 10px}
+      .topbar-left{min-width:fit-content}
+      .top-title{font-size:13px}
+      .top-links{gap:6px}
+      .top-links a{padding:7px 9px;font-size:12px}
       .buddy-fab{right:14px}
       .buddy-panel{right:14px}
     }
@@ -162,9 +194,13 @@
 </head>
 <body>
   <div class="layout">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
     {% if user %}
-    <aside class="sidebar">
-      <div class="brand">AI Study Buddy</div>
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-top">
+        <div class="brand">AI Study Buddy</div>
+        <button id="sidebarClose" class="sidebar-close" type="button" aria-label="Close sidebar">×</button>
+      </div>
       <div class="avatar-badge">{{ user['avatar'] }}</div>
       <div><strong>{{ user['username'] }}</strong></div>
       <div class="small">Your private learning zone</div>
@@ -175,12 +211,19 @@
       <nav class="menu">
         <a href="{{ url_for('chat') }}">💬 AI Chat</a>
         <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+        <a href="{{ url_for('notes_lab') }}">📝 Notes Lab</a>
+        <a href="{{ url_for('topic_learning') }}">📚 Topic Learning</a>
+        <a href="{{ url_for('graphs_page') }}">📈 Graphs</a>
+        <a href="{{ url_for('pyq_page') }}">🎯 PYQ</a>
+        <a href="{{ url_for('demo_test') }}">🧪 Demo Test</a>
+        <a href="{{ url_for('mock_test') }}">🧠 Mock Test</a>
+        <a href="{{ url_for('streak_page') }}">🔥 Streak</a>
+        <a href="{{ url_for('weekly_contest') }}">🏅 Weekly Contest</a>
+        <a href="{{ url_for('reminders_page') }}">⏰ Reminders</a>
+        <a href="{{ url_for('report_card') }}">📋 Report Card</a>
+        <a href="{{ url_for('models_3d') }}">🧊 3D Models</a>
         <a href="{{ url_for('profile') }}">🧩 Profile</a>
         <a href="{{ url_for('xp_center') }}">✨ XP Center</a>
-        <a href="{{ url_for('leaderboard_page') }}">🏆 Leaderboard</a>
-        <a href="{{ url_for('export_scores_pdf') }}">📄 Score PDF</a>
-        <a href="{{ url_for('export_response_pdf') }}">📝 Response PDF</a>
-        <a href="{{ url_for('health_page') }}">🩺 Health</a>
         <a href="{{ url_for('logout') }}">🚪 Logout</a>
       </nav>
       <button id="themeToggle" class="theme-toggle" type="button">🌓 Toggle Theme</button>
@@ -188,6 +231,23 @@
     {% endif %}
 
     <main class="main">
+      {% if user %}
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Toggle sidebar">☰</button>
+          <div class="top-title">{{ user['username'] }} · Premium Workspace</div>
+        </div>
+        <nav class="top-links" aria-label="Quick navigation">
+          <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
+          <a href="{{ url_for('chat') }}" class="{% if request.endpoint == 'chat' %}active{% endif %}">AI Chat</a>
+          <a href="{{ url_for('profile') }}" class="{% if request.endpoint == 'profile' %}active{% endif %}">Profile</a>
+          <a href="{{ url_for('xp_center') }}" class="{% if request.endpoint == 'xp_center' %}active{% endif %}">XP</a>
+          <a href="{{ url_for('report_card') }}" class="{% if request.path.startswith('/report-card') %}active{% endif %}">Reports</a>
+        </nav>
+      </header>
+      {% endif %}
+
+      <div class="main-content">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
@@ -219,6 +279,7 @@
           </div>
         </div>
       </footer>
+      </div>
     </main>
   </div>
 
@@ -255,6 +316,32 @@
         localStorage.setItem('ui-theme', next);
       });
     }
+
+    const layout = document.querySelector('.layout');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarClose = document.getElementById('sidebarClose');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+    function closeSidebar(){
+      if(layout) layout.classList.remove('sidebar-open');
+    }
+    function toggleSidebar(){
+      if(layout) layout.classList.toggle('sidebar-open');
+    }
+    if(sidebarToggle){
+      sidebarToggle.addEventListener('click', toggleSidebar);
+    }
+    if(sidebarClose){
+      sidebarClose.addEventListener('click', closeSidebar);
+    }
+    if(sidebarBackdrop){
+      sidebarBackdrop.addEventListener('click', closeSidebar);
+    }
+    window.addEventListener('resize', ()=>{
+      if(window.innerWidth > 900){
+        closeSidebar();
+      }
+    });
 
     const buddyFab = document.getElementById('buddyFab');
     const buddyPanel = document.getElementById('buddyPanel');

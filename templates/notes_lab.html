@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Notes Lab · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:14px}
+  .hero h1{color:#facc15;margin-bottom:6px}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:12px}
+  input,textarea,select{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;margin-bottom:10px}
+  .btn{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer}
+  .btn-primary{background:#facc15;color:#111827}
+  .tag{display:inline-block;padding:4px 8px;border-radius:999px;background:#1e293b;border:1px solid #334155;color:#cbd5e1;font-size:12px;margin-right:6px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="panel hero">
+  <h1>📝 Chat to Handwritten Colorful Notes</h1>
+  <p style="color:#94a3b8">Generate premium handwritten-style colorful notes with highlights, arrows, and PDF export (owner footer included).</p>
+  <span class="tag">Auto PDF</span><span class="tag">Owner Footer</span><span class="tag">AI Study Buddy Side Logo</span>
+</section>
+
+<section class="grid">
+  <form class="panel" method="POST" enctype="multipart/form-data">
+    <h3 style="color:#facc15;margin-bottom:8px">1) Convert Last Chat to Notes PDF</h3>
+    <input type="hidden" name="action" value="from_chat">
+    <input type="text" name="title" placeholder="Title for notes" value="Chat Notes">
+    <label>AI Teacher Mode</label>
+    <select name="teacher_mode">
+      <option value="normal">Normal</option>
+      <option value="strict">Strict</option>
+      <option value="very_strict">Very Strict</option>
+    </select>
+    <label>Provider</label>
+    <select name="provider">
+      <option value="gemini">Gemini</option>
+      <option value="openrouter">OpenRouter</option>
+    </select>
+    <button class="btn btn-primary" type="submit">Generate PDF from Last Chat</button>
+  </form>
+
+  <form class="panel" method="POST" enctype="multipart/form-data">
+    <h3 style="color:#facc15;margin-bottom:8px">2) Upload PDF to Notes PDF</h3>
+    <input type="hidden" name="action" value="from_pdf">
+    <input type="text" name="title" placeholder="Title for notes" value="PDF Book Notes">
+    <input type="file" name="pdf_file" accept="application/pdf" required>
+    <label>AI Teacher Mode</label>
+    <select name="teacher_mode">
+      <option value="normal">Normal</option>
+      <option value="strict">Strict</option>
+      <option value="very_strict">Very Strict</option>
+    </select>
+    <button class="btn btn-primary" type="submit">Generate PDF from Uploaded PDF</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h3 style="color:#facc15;margin-bottom:8px">3) Paste Book Summary to Notes PDF</h3>
+  <form method="POST">
+    <input type="hidden" name="action" value="from_summary">
+    <input type="text" name="title" placeholder="Title for notes" value="Summary Notes">
+    <textarea name="book_summary" placeholder="Paste your summary here..." maxlength="6000" rows="8" required></textarea>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px">
+        <label>AI Teacher Mode</label>
+        <select name="teacher_mode">
+          <option value="normal">Normal</option>
+          <option value="strict">Strict</option>
+          <option value="very_strict">Very Strict</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:220px">
+        <label>Provider</label>
+        <select name="provider">
+          <option value="gemini">Gemini</option>
+          <option value="openrouter">OpenRouter</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Generate Handwritten Color PDF</button>
+  </form>
+</section>
+{% endblock %}

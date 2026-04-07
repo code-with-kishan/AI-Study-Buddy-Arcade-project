@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Mock Test · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:14px}
+  .q{background:#111827;border:1px solid #334155;border-radius:10px;padding:10px;margin-bottom:10px}
+  .btn{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer;background:#facc15;color:#111827}
+  .suggest{background:#1f2937;border:1px solid #334155;padding:8px;border-radius:8px;margin-top:6px}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 style="color:#facc15;margin-bottom:8px">🧠 Full Mock Test Section</h2>
+  <form method="POST">
+    {% for q in questions %}
+      <div class="q">
+        <p><strong>{{ loop.index }}. {{ q['question'] }}</strong> <span style="color:#93c5fd">({{ q['topic'] }})</span></p>
+        {% for opt in q['options'] %}
+          <label style="display:block;margin-top:4px"><input type="radio" name="q_{{ q['id'] }}" value="{{ opt }}" required> {{ opt }}</label>
+        {% endfor %}
+      </div>
+    {% endfor %}
+    <button class="btn" type="submit">Submit Mock Test</button>
+  </form>
+</section>
+
+{% if report %}
+<section class="panel" style="background:linear-gradient(135deg,#0b1220,#172554)">
+  <h3 style="color:#facc15">Post-Mock Analysis</h3>
+  <p>Score: <strong>{{ report['score'] }}/{{ report['total'] }}</strong> · Accuracy: <strong>{{ report['accuracy'] }}%</strong></p>
+  <p><strong>Weak Topics:</strong> {{ report['weak_topics']|join(', ') if report['weak_topics'] else 'None' }}</p>
+  <h4 style="margin-top:8px;color:#facc15">Suggestions</h4>
+  {% for s in report['suggestions'] %}<div class="suggest">{{ s }}</div>{% endfor %}
+  <a href="{{ url_for('certificate_pdf') }}" class="btn" style="display:inline-block;margin-top:10px;text-decoration:none">Download Certificate</a>
+  <a href="{{ url_for('report_card_pdf') }}" class="btn" style="display:inline-block;margin-top:10px;margin-left:8px;text-decoration:none;background:#22c55e;color:#06240f">Download Report PDF</a>
+</section>
+{% endif %}
+{% endblock %}

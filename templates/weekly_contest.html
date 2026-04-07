@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Weekly Contest · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .grid{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:14px}
+  .q{background:#111827;border:1px solid #334155;border-radius:10px;padding:10px;margin-bottom:10px}
+  .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #334155}
+  .btn{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer;background:#facc15;color:#111827}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="grid">
+  <section class="panel">
+    <h2 style="color:#facc15;margin-bottom:8px">🏅 Weekly Contest ({{ week_key }})</h2>
+    <form method="POST">
+      {% for q in questions %}
+        <div class="q">
+          <p><strong>{{ loop.index }}. {{ q['question'] }}</strong></p>
+          {% for opt in q['options'] %}
+          <label style="display:block;margin-top:4px"><input type="radio" name="q_{{ q['id'] }}" value="{{ opt }}" required> {{ opt }}</label>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <button class="btn" type="submit">Submit Contest</button>
+    </form>
+    {% if your_score is not none %}<p style="margin-top:8px;color:#93c5fd">Your latest score: {{ your_score }}/{{ questions|length }}</p>{% endif %}
+  </section>
+
+  <section class="panel">
+    <h3 style="color:#facc15;margin-bottom:8px">Leaderboard</h3>
+    {% for row in leaderboard %}
+      <div class="row"><div>#{{ loop.index }} · {{ row['avatar'] }} {{ row['username'] }}</div><strong>{{ row['score'] }}/{{ row['total'] }}</strong></div>
+    {% else %}
+      <p style="color:#94a3b8">No submissions this week yet.</p>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

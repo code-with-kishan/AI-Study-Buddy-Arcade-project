@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Streak · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:14px}
+  .calendar{display:grid;grid-template-columns:repeat(20,1fr);gap:6px}
+  .cell{height:16px;border-radius:4px;border:1px solid #334155}
+  .lv0{background:#111827}.lv1{background:#14532d}.lv2{background:#15803d}.lv3{background:#16a34a}.lv4{background:#22c55e}
+  .btn{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer;background:#facc15;color:#111827}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 style="color:#facc15;margin-bottom:6px">🔥 Daily Streak Calendar</h2>
+  <p style="color:#94a3b8">Current streak: <strong>{{ streak_count }}</strong> day(s) with 1+ hour study.</p>
+  <button class="btn" type="button" id="hourBtn">Log 1 Hour Study</button>
+  <p id="hourStatus" style="margin-top:8px;color:#93c5fd"></p>
+</section>
+
+<section class="panel">
+  <div class="calendar">
+    {% for row in rows %}
+      {% set lv = 0 %}
+      {% if row['minutes'] >= 60 %}{% set lv = 1 %}{% endif %}
+      {% if row['minutes'] >= 120 %}{% set lv = 2 %}{% endif %}
+      {% if row['minutes'] >= 180 %}{% set lv = 3 %}{% endif %}
+      {% if row['minutes'] >= 240 %}{% set lv = 4 %}{% endif %}
+      <div class="cell lv{{ lv }}" title="{{ row['date'] }} · {{ row['minutes'] }} min"></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function logHour(){
+    const res = await fetch('/api/streak/log-hour', {method:'POST'});
+    const data = await res.json();
+    const msg = data.message || 'Logged';
+    document.getElementById('hourStatus').textContent = `${msg} Current streak: ${data.streak_count}`;
+
+    if('Notification' in window){
+      if(Notification.permission === 'granted'){
+        new Notification(msg);
+      } else if(Notification.permission !== 'denied'){
+        const perm = await Notification.requestPermission();
+        if(perm === 'granted') new Notification(msg);
+      }
+    }
+
+    setTimeout(()=>window.location.reload(), 700);
+  }
+  document.getElementById('hourBtn').addEventListener('click', logHour);
+</script>
+{% endblock %}

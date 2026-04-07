@@ -20,6 +20,9 @@
   .plus{color:#22c55e;font-weight:700}
   .rank-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1f2937}
   .rank-row:last-child{border-bottom:none}
+  .rank-table{width:100%;border-collapse:collapse;margin-top:10px}
+  .rank-table th,.rank-table td{padding:8px;border-bottom:1px solid #334155;text-align:left;font-size:14px}
+  .rank-table th{color:#93c5fd}
   @media(max-width:900px){.grid,.rules{grid-template-columns:1fr}}
 </style>
 {% endblock %}
@@ -65,8 +68,8 @@
   </section>
 
   <section class="panel">
-    <h3 style="margin-bottom:8px;color:#facc15">Top XP Players</h3>
-    {% for item in leaderboard %}
+    <h3 style="margin-bottom:8px;color:#facc15">Leaderboard Snapshot</h3>
+    {% for item in leaderboard[:10] %}
       <div class="rank-row">
         <div>#{{ item['rank'] }} · {{ item['avatar'] }} {{ item['username'] }}</div>
         <strong>{{ item['xp'] }}</strong>
@@ -74,6 +77,25 @@
     {% endfor %}
   </section>
 </div>
+
+<section class="panel">
+  <h3 style="margin-bottom:8px;color:#facc15">Full Leaderboard (Merged with XP Center)</h3>
+  <table class="rank-table">
+    <thead>
+      <tr><th>Rank</th><th>Player</th><th>Level</th><th>XP</th></tr>
+    </thead>
+    <tbody>
+      {% for item in leaderboard[:25] %}
+      <tr>
+        <td>#{{ item['rank'] }}</td>
+        <td>{{ item['avatar'] }} {{ item['username'] }}</td>
+        <td>{{ item['level']['icon'] }} {{ item['level']['name'] }}</td>
+        <td>{{ item['xp'] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
 
 <section class="panel">
   <h3 style="margin-bottom:8px;color:#facc15">Recent XP Activity</h3>

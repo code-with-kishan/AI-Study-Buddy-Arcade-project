@@ -5,49 +5,144 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login · AI Study Buddy</title>
   <style>
+    :root{
+      --bg:#070b16;
+      --bg-2:#120f2f;
+      --card:rgba(13,18,33,.72);
+      --card-soft:rgba(17,24,39,.58);
+      --text:#f8fafc;
+      --muted:#9aa8c2;
+      --border:#2f3b52;
+      --accent:#facc15;
+      --accent-2:#38bdf8;
+    }
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:Inter,system-ui,sans-serif;background:radial-gradient(circle at top,#101a34,#05070f 60%);color:#f8fafc;min-height:100vh;overflow:hidden}
-    .stage{position:fixed;inset:0;pointer-events:none}
-    .character{position:absolute;font-size:46px;animation:float 8s ease-in-out infinite;opacity:.85}
-    .c1{left:8%;top:12%}.c2{left:78%;top:16%;animation-delay:1s}.c3{left:18%;top:72%;animation-delay:2s}.c4{left:72%;top:74%;animation-delay:3s}
-    @keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-18px) rotate(5deg)}}
-    .card{width:min(420px,90vw);margin:10vh auto;background:rgba(15,23,42,.82);border:1px solid #334155;border-radius:16px;padding:24px;position:relative;z-index:2;backdrop-filter:blur(6px)}
-    h1{color:#facc15;margin-bottom:8px}
-    p{color:#cbd5e1;margin-bottom:16px}
-    input{width:100%;padding:11px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#fff;margin-bottom:10px}
-    button{width:100%;padding:11px;border:none;border-radius:10px;background:#facc15;color:#111827;font-weight:800;cursor:pointer}
-    .link{margin-top:10px;text-align:center;color:#94a3b8}
-    .link a{color:#facc15}
-    .flash{padding:10px;border-radius:8px;margin-bottom:10px}
+    body{
+      font-family:Inter,system-ui,-apple-system,sans-serif;
+      color:var(--text);
+      min-height:100vh;
+      background:
+        radial-gradient(700px 360px at 8% 0%,rgba(56,189,248,.12),transparent 55%),
+        radial-gradient(640px 320px at 90% 100%,rgba(250,204,21,.10),transparent 58%),
+        linear-gradient(160deg,var(--bg),var(--bg-2) 65%,#070d1e);
+      overflow:auto;
+      position:relative;
+    }
+    .orb{position:absolute;border-radius:999px;opacity:.24;z-index:0;pointer-events:none}
+    .orb.o1{width:200px;height:200px;background:#38bdf8;top:-70px;left:-50px}
+    .orb.o2{width:240px;height:240px;background:#f59e0b;bottom:-100px;right:-60px}
+    .orb.o3{width:140px;height:140px;background:#22c55e;top:24%;right:17%}
+
+    .auth-shell{
+      width:min(1080px,94vw);
+      margin:5vh auto;
+      display:grid;
+      grid-template-columns:1.05fr .95fr;
+      gap:16px;
+      position:relative;
+      z-index:2;
+    }
+    .pitch,.card{
+      border:1px solid var(--border);
+      border-radius:24px;
+      background:#0f172a;
+      box-shadow:0 12px 28px rgba(0,0,0,.24);
+    }
+    .pitch{padding:26px;background:linear-gradient(160deg,#0f172a,#111b31)}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;border:1px solid #384766;background:var(--card-soft);font-size:12px;color:#c6d4ee;margin-bottom:14px}
+    .eyebrow b{color:#fde68a}
+    .pitch h2{font-size:32px;line-height:1.15;margin-bottom:10px}
+    .pitch h2 span{color:var(--accent)}
+    .pitch p{color:var(--muted);line-height:1.6;margin-bottom:16px}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{padding:7px 11px;border-radius:999px;background:#0e1729;border:1px solid #2d3a53;font-size:12px;color:#dbe6fb}
+
+    .card{padding:24px;align-self:center}
+    h1{font-size:31px;margin-bottom:8px}
+    .sub{color:var(--muted);margin-bottom:16px}
+    .input-wrap{position:relative;margin-bottom:12px}
+    .input-wrap label{font-size:12px;color:#bed0ee;margin-bottom:5px;display:block}
+    input{
+      width:100%;
+      padding:12px 13px;
+      border-radius:12px;
+      border:1px solid #334155;
+      background:#0a1221;
+      color:#fff;
+      outline:none;
+      transition:border-color .22s ease, box-shadow .22s ease, transform .22s ease;
+    }
+    input:focus{border-color:var(--accent-2);box-shadow:0 0 0 3px rgba(56,189,248,.16);transform:translateY(-1px)}
+    button{
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:12px;
+      background:linear-gradient(90deg,var(--accent),#fde047 55%,#fbbf24);
+      color:#111827;
+      font-weight:800;
+      cursor:pointer;
+      transition:transform .24s ease, box-shadow .24s ease;
+    }
+    button:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 12px 26px rgba(250,204,21,.28)}
+    .link{margin-top:12px;text-align:center;color:#b4c2db}
+    .link a{color:#fef08a;font-weight:700}
+    .link a:hover{text-decoration:underline}
+    .flash{padding:10px;border-radius:10px;margin-bottom:10px;font-size:14px}
     .error{background:#3f1d1d;color:#fecaca;border:1px solid #ef4444}
     .success{background:#0f2a1d;color:#bbf7d0;border:1px solid #22c55e}
+
+    @media(max-width:900px){
+      .auth-shell{grid-template-columns:1fr;margin:16px auto 28px}
+      .pitch h2{font-size:28px}
+    }
+    @media(prefers-reduced-motion:reduce){
+      *,*::before,*::after{animation:none !important;transition:none !important}
+    }
   </style>
 </head>
 <body>
-  <div class="stage">
-    <div class="character c1">🧙</div>
-    <div class="character c2">🤖</div>
-    <div class="character c3">🐉</div>
-    <div class="character c4">👾</div>
-  </div>
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
 
-  <div class="card">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+  <div class="auth-shell">
+    <section class="pitch">
+      <div class="eyebrow">Private Study OS <b>v2</b></div>
+      <h2>Welcome back to your <span>high-focus learning cockpit</span>.</h2>
+      <p>Track streaks, solve doubts, and unlock smart reports in one premium workspace built for serious students.</p>
+      <div class="chips">
+        <span class="chip">AI Doubt Solver</span>
+        <span class="chip">3D Concepts</span>
+        <span class="chip">Contest Engine</span>
+        <span class="chip">Progress Heatmap</span>
+      </div>
+    </section>
 
-    <h1>Welcome Back</h1>
-    <p>Login to continue your private AI learning world.</p>
-    <form method="POST">
-      <input type="text" name="username" placeholder="Username" required>
-      <input type="password" name="password" placeholder="Password" required>
-      <button type="submit">Login</button>
-    </form>
-    <div class="link">New here? <a href="{{ url_for('signup') }}">Create account</a></div>
+    <section class="card">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <h1>Login</h1>
+      <p class="sub">Continue where you left off and keep your momentum alive.</p>
+      <form method="POST">
+        <div class="input-wrap">
+          <label>Username</label>
+          <input type="text" name="username" placeholder="Enter your username" required>
+        </div>
+        <div class="input-wrap">
+          <label>Password</label>
+          <input type="password" name="password" placeholder="Enter your password" required>
+        </div>
+        <button type="submit">Enter Dashboard</button>
+      </form>
+      <div class="link">New here? <a href="{{ url_for('signup') }}">Create premium account</a></div>
+    </section>
   </div>
 </body>
 </html>

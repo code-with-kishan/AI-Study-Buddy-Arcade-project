@@ -1,551 +1,253 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>AI Study Buddy - Arcade Ultimate</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-
-body{
-    font-family:'Inter',sans-serif;
-    background:#000814;
-    color:white;
-    overflow-x:hidden;
-}
-
-/* -------- AI CORE BOX -------- */
-
-.quiz-card{
-    margin-bottom:20px;
-    padding:10px;
-    border-radius:10px;
-    background:#0f172a;
-}
-
-.ai-core-box{
-    background:#111827;
-    border:1px solid #1e293b;
-    border-radius:14px;
-    padding:16px;
-    margin-bottom:18px;
-    text-align:left;
-    box-shadow:0 0 15px rgba(250,204,21,0.15);
-}
-
-.ai-core-label{
-    font-size:14px;
-    color:#facc15;
-    margin-bottom:8px;
-    font-weight:600;
-}
-
-.ai-core-hint{
-    font-size:12px;
-    color:#9ca3af;
-    margin-top:6px;
-}
-
-.ai-select{
-    width:100%;
-    padding:10px;
-    border-radius:8px;
-    border:none;
-    background:#1f2937;
-    color:white;
-}
-
-/* ---------- STARFIELD ---------- */
-.star{
-    position:fixed;
-    width:2px;
-    height:2px;
-    background:white;
-    opacity:0.8;
-    animation:twinkle 2s infinite alternate;
-}
-
-@keyframes twinkle{
-    from{opacity:0.2;}
-    to{opacity:1;}
-}
-
-/* ---------- BIG SNAKE ---------- */
-.snake{
-    position:fixed;
-    font-size:120px;
-    opacity:0.07;
-    animation:snakeMove 25s linear infinite;
-    z-index:1;
-}
-
-@keyframes snakeMove{
-    0%{transform:translateX(-200px);}
-    100%{transform:translateX(120vw);}
-}
-
-/* ---------- FLOATING DRAGONS ---------- */
-.dragon{
-    position:fixed;
-    font-size:60px;
-    opacity:0.25;
-    animation:dragonFloat 20s linear infinite;
-    z-index:1;
-}
-
-@keyframes dragonFloat{
-    0%{transform:translateY(110vh);}
-    100%{transform:translateY(-200px);}
-}
-
-/* ---------- STICKER SHOWER ---------- */
-.sticker{
-    position:fixed;
-    font-size:30px;
-    animation:fall linear infinite;
-    z-index:1;
-}
-
-@keyframes fall{
-    0%{transform:translateY(-100px);}
-    100%{transform:translateY(110vh);}
-}
-
-/* ---------- CURSOR SPARKLES ---------- */
-.sparkle{
-    position:fixed;
-    width:6px;
-    height:6px;
-    background:gold;
-    border-radius:50%;
-    pointer-events:none;
-    animation:sparkleFade 0.8s linear forwards;
-    z-index:9999;
-}
-
-@keyframes sparkleFade{
-    to{
-        opacity:0;
-        transform:scale(2);
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Study Buddy - Premium Learning Platform</title>
+  <style>
+    :root{
+      --bg:#070b16;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --card:#0b1220;
+      --card2:#111827;
+      --border:#1f2937;
+      --accent:#facc15;
     }
-}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Inter,system-ui,-apple-system,sans-serif;background:radial-gradient(1200px 700px at 10% -10%,#1b2553 0,transparent 60%),radial-gradient(1000px 600px at 90% 0,#1f3a34 0,transparent 55%),var(--bg);color:var(--text);line-height:1.5}
+    a{text-decoration:none;color:inherit}
+    .container{max-width:1160px;margin:0 auto;padding:0 20px}
 
-/* ---------- MAIN UI ---------- */
-.container{
-    max-width:900px;
-    margin:0 auto;
-    padding:80px 20px;
-    text-align:center;
-    position:relative;
-    z-index:10;
-}
+    .nav{position:sticky;top:0;z-index:40;background:rgba(7,11,22,.82);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+    .nav-inner{display:flex;justify-content:space-between;align-items:center;padding:14px 0}
+    .brand{font-weight:800;color:var(--accent);font-size:20px}
+    .links{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .link{padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card2);font-size:14px}
+    .link{transition:transform .22s ease, border-color .22s ease, box-shadow .22s ease}
+    .link:hover{transform:translateY(-2px);border-color:#60a5fa;box-shadow:0 8px 20px rgba(56,189,248,.15)}
+    .btn{padding:10px 14px;border-radius:10px;font-weight:700;border:1px solid var(--border);display:inline-block}
+    .btn{transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease, background .22s ease}
+    .btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 12px 28px rgba(0,0,0,.28);border-color:#60a5fa}
+    .btn-accent{background:var(--accent);color:#111827;border:none}
+    .btn-accent:hover{box-shadow:0 14px 28px rgba(250,204,21,.28)}
 
-.arcade-title{
-    font-family:'Press Start 2P', cursive;
-    font-size:26px;
-    color:#facc15;
-    margin-bottom:15px;
-}
+    .hero{padding:72px 0 38px 0}
+    .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center}
+    .badge{display:inline-block;font-size:12px;color:#111827;background:var(--accent);padding:6px 10px;border-radius:999px;font-weight:700;margin-bottom:12px}
+    h1{font-size:46px;line-height:1.08;margin-bottom:14px}
+    .sub{color:var(--muted);max-width:620px}
+    .cta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .hero-card{background:linear-gradient(160deg,#111827,#0b1220);border:1px solid var(--border);border-radius:16px;padding:18px}
+    .hero-stat{display:grid;grid-template-columns:repeat(2,minmax(120px,1fr));gap:10px}
+    .s{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:12px}
+    .s strong{color:var(--accent)}
 
-.subtitle{
-    margin-bottom:30px;
-    color:#cbd5e1;
-}
+    .section{padding:24px 0}
+    .section h2{font-size:28px;margin-bottom:12px;color:var(--accent)}
+    .section p.lead{color:var(--muted);margin-bottom:14px}
 
-select,textarea{
-    width:100%;
-    padding:12px;
-    margin-bottom:12px;
-    border-radius:8px;
-    border:none;
-    background:#1f2937;
-    color:white;
-}
+    .feature-grid{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:12px;perspective:1000px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;transform-style:preserve-3d;transition:transform .45s ease, box-shadow .3s ease, border-color .3s ease;position:relative;overflow:hidden}
+    .card::before{content:'';position:absolute;inset:-120% -40%;background:linear-gradient(120deg,transparent 35%,rgba(250,204,21,.12) 50%,transparent 65%);transform:translateX(-40%);transition:transform .55s ease;pointer-events:none}
+    .card h3{font-size:16px;margin-bottom:6px;color:#f8fafc}
+    .card p{font-size:14px;color:var(--muted)}
+    .card:hover{transform:rotateY(8deg) rotateX(5deg) translateY(-6px);box-shadow:0 16px 34px rgba(0,0,0,.32);border-color:#475569}
+    .card:hover::before{transform:translateX(120%)}
 
-button{
-    padding:12px 30px;
-    border:none;
-    border-radius:8px;
-    background:#facc15;
-    color:black;
-    font-weight:bold;
-    cursor:pointer;
-    transition:0.2s;
-}
+    .timeline{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}
+    .step{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px}
+    .step{transition:transform .22s ease, border-color .22s ease}
+    .step:hover{transform:translateY(-4px);border-color:#60a5fa}
+    .step b{color:var(--accent)}
 
-button:hover{
-    transform:scale(1.05);
-}
+    .footer{margin:36px 0 24px 0;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
 
-.response-box{
-    margin-top:30px;
-    padding:25px;
-    border-radius:15px;
-    background:#111827;
-    border:1px solid #1e293b;
-    text-align:left;
-    white-space:pre-wrap;
-}
+    .buddy-fab{position:fixed;right:18px;bottom:18px;width:56px;height:56px;border-radius:50%;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:24px;cursor:pointer;z-index:80;box-shadow:0 10px 25px rgba(0,0,0,.35)}
+    .buddy-panel{position:fixed;right:18px;bottom:86px;width:min(340px,calc(100vw - 24px));background:#1d1336;border:1px solid var(--border);border-radius:14px;overflow:hidden;z-index:80;box-shadow:0 14px 36px rgba(0,0,0,.42)}
+    .buddy-hidden{display:none}
+    .buddy-head{padding:10px 12px;background:#2a1a4f;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .buddy-head strong{color:#fcd34d}
+    .buddy-msgs{max-height:290px;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+    .buddy-msg{padding:8px 10px;border-radius:10px;line-height:1.4;font-size:13px;white-space:pre-wrap}
+    .buddy-user{background:#1f2937;border:1px solid var(--border);align-self:flex-end}
+    .buddy-ai{background:#261a45;border:1px solid var(--border);align-self:flex-start}
+    .buddy-input-wrap{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border)}
+    .buddy-input{flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:#111827;color:var(--text)}
+    .buddy-send{padding:10px 12px;border:none;border-radius:10px;background:var(--accent);color:#111827;font-weight:700;cursor:pointer}
 
-.quiz-option{cursor:pointer;padding:6px 0;}
-.quiz-option:hover{color:#3b82f6;}
-.selected{color:#facc15;}
-.correct{color:#22c55e;}
-.wrong{color:#ef4444;}
+    .sparkle{position:fixed;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:95;opacity:.9;animation:sparklePop .8s ease-out forwards}
+    @keyframes sparklePop{0%{transform:scale(.5);opacity:1}100%{transform:translateY(-10px) scale(2);opacity:0}}
 
-.timer{
-    font-weight:bold;
-    margin-bottom:10px;
-    color:#facc15;
-}
+    @keyframes floatSoft{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .hero-card{animation:floatSoft 6.5s ease-in-out infinite}
 
-.alert-warning{
-    background:#3f1d1d;
-    padding:12px;
-    border-radius:8px;
-    color:#facc15;
-    margin-bottom:15px;
-    font-weight:600;
-    border:1px solid #facc15;
-}
-
-.xp-wrap{
-    margin-top:12px;
-    margin-bottom:14px;
-}
-
-.xp-track{
-    width:100%;
-    height:10px;
-    background:#1f2937;
-    border-radius:999px;
-    overflow:hidden;
-}
-
-#xpBar{
-    width:0%;
-    height:100%;
-    background:#22c55e;
-    transition:width 0.4s ease;
-}
-
-#levelUp{
-    display:none;
-    margin-top:10px;
-    color:#22c55e;
-    font-weight:700;
-}
-
-.dashboard{
-    margin-top:20px;
-    padding:16px;
-    border-radius:12px;
-    background:#0b1220;
-    border:1px solid #1e293b;
-}
-
-.dash-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
-
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px;}
-
-.stat-card{background:#111827;border:1px solid #1e293b;border-radius:10px;padding:10px;}
-
-.history-table{width:100%;border-collapse:collapse;font-size:13px;}
-.history-table th,.history-table td{padding:8px;border-bottom:1px solid #1f2937;text-align:left;}
-</style>
+    @media(max-width:1000px){
+      h1{font-size:36px}
+      .hero-grid{grid-template-columns:1fr}
+      .feature-grid{grid-template-columns:repeat(2,minmax(220px,1fr))}
+      .timeline{grid-template-columns:repeat(2,minmax(160px,1fr))}
+    }
+    @media(max-width:700px){
+      .feature-grid,.timeline{grid-template-columns:1fr}
+      h1{font-size:30px}
+      .links{justify-content:flex-end}
+    }
+  </style>
 </head>
-
 <body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <div class="brand">AI Study Buddy</div>
+      <nav class="links">
+        <a class="link" href="#features">Features</a>
+        <a class="link" href="#flow">How It Works</a>
+        <a class="link" href="{{ url_for('login') }}">Login</a>
+        <a class="btn btn-accent" href="{{ url_for('signup') }}">Sign Up</a>
+      </nav>
+    </div>
+  </header>
 
-<div class="snake">🐍</div>
-<div class="dragon" style="left:15%;">🐉</div>
-<div class="dragon" style="left:75%; animation-duration:25s;">🐲</div>
+  <main class="container">
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <span class="badge">Structured Exam Learning System</span>
+          <h1>Daily AI Learning Platform for JEE, NEET, and School Success</h1>
+          <p class="sub">Not just a chatbot. AI Study Buddy is a complete study engine with doubt solving, handwritten notes, PYQ practice, mock tests, analytics, streaks, contests, reminders, and report cards.</p>
+          <div class="cta-row">
+            <a class="btn btn-accent" href="{{ url_for('signup') }}">Create Free Account</a>
+            <a class="btn" href="{{ url_for('login') }}">Login to Dashboard</a>
+          </div>
+        </div>
+        <div class="hero-card">
+          <h3 style="margin-bottom:10px;color:#facc15">What You Get</h3>
+          <div class="hero-stat">
+            <div class="s"><strong>AI Doubt Solver</strong><div style="color:#94a3b8;font-size:13px">Strict + Very Strict modes</div></div>
+            <div class="s"><strong>Notes Lab</strong><div style="color:#94a3b8;font-size:13px">Handwritten color PDF export</div></div>
+            <div class="s"><strong>Graphs + 3D</strong><div style="color:#94a3b8;font-size:13px">Equation plots + model previews</div></div>
+            <div class="s"><strong>Mock + Report</strong><div style="color:#94a3b8;font-size:13px">Certificate + report card PDFs</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-<div class="container">
+    <section id="features" class="section">
+      <h2>Everything in One Premium Workspace</h2>
+      <p class="lead">All features already available inside the platform with a single account flow.</p>
+      <div class="feature-grid">
+        <article class="card"><h3>AI Doubt Solver</h3><p>Explain, summarize, quiz, and flashcards with provider fallback and teacher modes.</p></article>
+        <article class="card"><h3>Handwritten Notes PDF</h3><p>Convert chat/PDF/summary into clean colorful handwritten-style notes.</p></article>
+        <article class="card"><h3>Topic Learning Mode</h3><p>Topic explanation, notes, diagram hints, and practice questions in one place.</p></article>
+        <article class="card"><h3>Live Graph Generator</h3><p>Plot equations and custom coordinates with pan/zoom updates.</p></article>
+        <article class="card"><h3>PYQ Practice</h3><p>JEE and NEET demo banks with 2-attempt logic, answer reveal, and audio explain.</p></article>
+        <article class="card"><h3>Demo & Mock Tests</h3><p>Detailed analysis, weak topic detection, and suggestions after submission.</p></article>
+        <article class="card"><h3>Streak Calendar</h3><p>GitHub-style daily streak tracking with 1-hour completion notification.</p></article>
+        <article class="card"><h3>Weekly Contest</h3><p>Competitive weekly quiz with rank-based leaderboard.</p></article>
+        <article class="card"><h3>Reminders</h3><p>Study, test, and revision reminders managed from one dashboard.</p></article>
+        <article class="card"><h3>Report Card PDF</h3><p>Authorized landscape report with theory notes and owner sign-off.</p></article>
+        <article class="card"><h3>Certificate PDF</h3><p>Landscape authorized certificate after mock performance.</p></article>
+        <article class="card"><h3>3D Learning Section</h3><p>Interactive model viewers with rotate, zoom, and pan controls.</p></article>
+      </div>
+    </section>
 
-{% if api_warning %}
-<div class="alert-warning">{{ api_warning }}</div>
-{% endif %}
+    <section id="flow" class="section">
+      <h2>Simple Learning Flow</h2>
+      <div class="timeline">
+        <div class="step"><b>1. Register</b><p style="color:#94a3b8;font-size:13px">Create account and choose avatar.</p></div>
+        <div class="step"><b>2. Study Daily</b><p style="color:#94a3b8;font-size:13px">Chat, notes, PYQ, and topic mode.</p></div>
+        <div class="step"><b>3. Test & Analyze</b><p style="color:#94a3b8;font-size:13px">Demo/mock tests with weak-topic report.</p></div>
+        <div class="step"><b>4. Improve Score</b><p style="color:#94a3b8;font-size:13px">Use streaks, reminders, contests, and revision plan.</p></div>
+      </div>
+      <div class="cta-row" style="margin-top:16px">
+        <a class="btn btn-accent" href="{{ url_for('signup') }}">Start with Signup</a>
+        <a class="btn" href="{{ url_for('login') }}">Already have account?</a>
+      </div>
+    </section>
 
-<div class="arcade-title">AI STUDY BUDDY</div>
-<div class="subtitle">Arcade Ultimate Mode Activated 🚀</div>
+    <div class="footer">
+      <div>© 2026 AI Study Buddy · Owner: Kishan Nishad · Built for focused daily study and exam excellence.</div>
+    </div>
+  </main>
 
-<form method="POST">
+  <button id="buddyFab" class="buddy-fab" type="button" aria-label="Open AI helper">🐼</button>
+  <section id="buddyPanel" class="buddy-panel buddy-hidden" aria-live="polite">
+    <div class="buddy-head">
+      <strong>Cute Study Buddy</strong>
+      <button id="buddyClose" type="button" class="btn" style="padding:6px 9px;background:#111827;color:#e5e7eb">✕</button>
+    </div>
+    <div id="buddyMsgs" class="buddy-msgs">
+      <div class="buddy-msg buddy-ai">Hi! I can help you understand this platform and guide you to the right feature.</div>
+    </div>
+    <div class="buddy-input-wrap">
+      <input id="buddyInput" class="buddy-input" type="text" placeholder="Ask about features, flow, or getting started...">
+      <button id="buddySend" class="buddy-send" type="button">Send</button>
+    </div>
+  </section>
 
-<div class="ai-core-box">
-<div class="ai-core-label">⚡ AI Core Engine</div>
+  <script>
+    const buddyFab = document.getElementById('buddyFab');
+    const buddyPanel = document.getElementById('buddyPanel');
+    const buddyClose = document.getElementById('buddyClose');
+    const buddyMsgs = document.getElementById('buddyMsgs');
+    const buddyInput = document.getElementById('buddyInput');
+    const buddySend = document.getElementById('buddySend');
 
-<select name="provider" class="ai-select">
-<option value="gemini" {% if provider == "gemini" %}selected{% endif %}>
-Gemini • Fast • Limited Free
-</option>
+    const canned = [
+      {k:['signup','register','create'], r:'Click Sign Up in the top-right nav to create your account and start your dashboard.'},
+      {k:['login','sign in'], r:'Use Login from navbar. After login, you enter the full study workspace.'},
+      {k:['notes','pdf'], r:'Use Notes Lab to create colorful handwritten notes PDFs from chat, summary, or uploaded PDF.'},
+      {k:['mock','test','report'], r:'Take Mock Test, then download both certificate and report card PDFs.'},
+      {k:['graph','equation','coordinate'], r:'Open Graphs section to draw equations and custom coordinate points.'},
+      {k:['pyq','jee','neet'], r:'Use PYQ section for JEE/NEET attempts with solution reveal and audio explanation.'}
+    ];
 
-<option value="openrouter" {% if provider == "openrouter" %}selected{% endif %}>
-OpenRouter • Free Backup
-</option>
-</select>
-
-<div class="ai-core-hint">
-Choose your AI engine before generating results.
-</div>
-</div>
-
-<select name="mode">
-<option value="explain" {% if mode == "explain" %}selected{% endif %}>Explain Topic</option>
-<option value="summarize" {% if mode == "summarize" %}selected{% endif %}>Summarize Notes</option>
-<option value="quiz" {% if mode == "quiz" %}selected{% endif %}>Interactive Quiz</option>
-<option value="flashcards" {% if mode == "flashcards" %}selected{% endif %}>Flashcards</option>
-</select>
-
-<select name="difficulty">
-<option value="Easy" {% if difficulty == "Easy" %}selected{% endif %}>Easy Level</option>
-<option value="Medium" {% if difficulty == "Medium" %}selected{% endif %}>Medium Level</option>
-<option value="Hard" {% if difficulty == "Hard" %}selected{% endif %}>Hard Level</option>
-</select>
-
-<textarea name="topic" rows="4" placeholder="Enter topic..." required>{{ user_input }}</textarea>
-
-<button type="submit">GENERATE</button>
-
-</form>
-
-{% if response %}
-<div class="response-box">
-
-{% if mode == "quiz" %}
-<div class="timer" id="timer"></div>
-<div id="quizContainer"></div>
-<input type="hidden" id="topicValue" value="{{ user_input|e }}">
-<input type="hidden" id="difficultyValue" value="{{ difficulty|e }}">
-<input type="hidden" id="providerValue" value="{{ provider|e }}">
-<div class="xp-wrap">
-    <div class="xp-track"><div id="xpBar"></div></div>
-    <div id="levelUp">🎉 Level Up! Perfect Score!</div>
-</div>
-<button onclick="checkScore()">Submit Quiz</button>
-<div id="scoreBox"></div>
-
-<script>
-let timeLeft = 60;
-const timerDisplay = document.getElementById("timer");
-const countdown = setInterval(()=>{
-    timerDisplay.innerText = "Time Left: " + timeLeft + "s";
-    timeLeft--;
-    if(timeLeft < 0){
-        clearInterval(countdown);
-        checkScore();
-    }
-},1000);
-
-const rawText = `{{ response|safe }}`;
-const quizContainer = document.getElementById("quizContainer");
-
-let currentCard = null;
-
-rawText.split("\n").forEach(line=>{
-    line = line.trim();
-
-    if(line.startsWith("Q")){
-        currentCard = document.createElement("div");
-        currentCard.className = "quiz-card";
-        currentCard.innerHTML = "<p><strong>"+line+"</strong></p>";
-        quizContainer.appendChild(currentCard);
-    }
-
-    else if(["A)","B)","C)","D)"].some(p=>line.startsWith(p))){
-
-        if(currentCard){
-            const option = document.createElement("div");
-            option.className = "quiz-option";
-            option.textContent = line;
-
-            option.addEventListener("click", function(){
-
-    const card = option.closest(".quiz-card");
-
-    const siblings = card.querySelectorAll(".quiz-option");
-    siblings.forEach(o => o.classList.remove("selected"));
-
-    option.classList.add("selected");
-});
-
-
-            currentCard.appendChild(option);
-        }
+    function addBuddyMessage(text, kind='ai'){
+      const node = document.createElement('div');
+      node.className = `buddy-msg ${kind === 'user' ? 'buddy-user' : 'buddy-ai'}`;
+      node.textContent = text;
+      buddyMsgs.appendChild(node);
+      buddyMsgs.scrollTop = buddyMsgs.scrollHeight;
     }
 
-    else if(line.startsWith("Answer:")){
-        if(currentCard){
-            const correctLetter = line.split(":")[1].trim();
-            currentCard.dataset.answer = correctLetter;
-        }
+    function replyFor(text){
+      const t = text.toLowerCase();
+      for(const item of canned){
+        if(item.k.some(key=>t.includes(key))) return item.r;
+      }
+      return 'Try asking: signup, mock test, report card, notes pdf, pyq, graphs, or reminders.';
     }
-});
 
-function checkScore(){
+    function sendBuddyMessage(){
+      const text = buddyInput.value.trim();
+      if(!text) return;
+      buddyInput.value = '';
+      addBuddyMessage(text, 'user');
+      addBuddyMessage(replyFor(text), 'ai');
+    }
 
-    let score = 0;
-    const cards = document.querySelectorAll(".quiz-card");
-
-    cards.forEach(card=>{
-        const selected = card.querySelector(".selected");
-        const correct = card.dataset.answer;
-
-        if(selected){
-
-            // lock options after submit
-            const options = card.querySelectorAll(".quiz-option");
-            options.forEach(opt => opt.style.pointerEvents = "none");
-
-            if(selected.textContent.startsWith(correct)){
-                selected.classList.add("correct");
-                score++;
-            }else{
-                selected.classList.add("wrong");
-
-                // highlight correct answer
-                options.forEach(opt=>{
-                    if(opt.textContent.startsWith(correct)){
-                        opt.classList.add("correct");
-                    }
-                });
-            }
-        }
+    // Landing-page-only sparkle trail on cursor movement.
+    const sparklePalette = ['#facc15','#38bdf8','#a78bfa','#22c55e','#fb7185'];
+    let sparkleTick = 0;
+    document.addEventListener('mousemove', (event)=>{
+      sparkleTick += 1;
+      if(sparkleTick % 2 !== 0) return;
+      const node = document.createElement('span');
+      node.className = 'sparkle';
+      const size = 5 + Math.random() * 6;
+      node.style.width = `${size}px`;
+      node.style.height = `${size}px`;
+      node.style.left = `${event.clientX + (Math.random() * 12 - 6)}px`;
+      node.style.top = `${event.clientY + (Math.random() * 12 - 6)}px`;
+      node.style.background = sparklePalette[Math.floor(Math.random() * sparklePalette.length)];
+      document.body.appendChild(node);
+      setTimeout(()=>node.remove(), 820);
     });
 
-    document.getElementById("scoreBox").innerText =
-        "Score: " + score + " / " + cards.length;
-
-    // XP
-    let xpPercent = (score / cards.length) * 100;
-    document.getElementById("xpBar").style.width = xpPercent + "%";
-
-    if(score === cards.length){
-        document.getElementById("levelUp").style.display = "block";
-    }
-
-    const topicValue = document.getElementById("topicValue")?.value || "";
-    const difficultyValue = document.getElementById("difficultyValue")?.value || "Easy";
-    const providerValue = document.getElementById("providerValue")?.value || "unknown";
-
-    fetch("/save_score",{
-        method:"POST",
-        headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        body:`topic=${encodeURIComponent(topicValue)}&score=${score}&total=${cards.length}&difficulty=${encodeURIComponent(difficultyValue)}&provider=${encodeURIComponent(providerValue)}`
-    });
-}
-
-
-
-</script>
-
-{% else %}
-{{ response|safe }}
-{% endif %}
-
-</div>
-{% endif %}
-
-<div class="dashboard">
-<div class="dash-actions">
-    <button type="button" onclick="loadStatsAndHistory()">Refresh Stats</button>
-    <button type="button" onclick="window.location.href='/export_scores.csv'">Export CSV</button>
-</div>
-
-<div class="stats-grid">
-    <div class="stat-card"><strong>Total Attempts</strong><div id="statAttempts">0</div></div>
-    <div class="stat-card"><strong>Total Score</strong><div id="statScore">0</div></div>
-    <div class="stat-card"><strong>Total Questions</strong><div id="statQuestions">0</div></div>
-    <div class="stat-card"><strong>Average %</strong><div id="statAverage">0%</div></div>
-</div>
-
-<table class="history-table">
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Topic</th>
-            <th>Score</th>
-            <th>Difficulty</th>
-            <th>Provider</th>
-        </tr>
-    </thead>
-    <tbody id="historyBody">
-        <tr><td colspan="5">No attempts yet.</td></tr>
-    </tbody>
-</table>
-</div>
-
-</div>
-
-<script>
-for(let i=0;i<150;i++){
-let star=document.createElement("div");
-star.className="star";
-star.style.top=Math.random()*100+"vh";
-star.style.left=Math.random()*100+"vw";
-star.style.animationDuration=(Math.random()*3+1)+"s";
-document.body.appendChild(star);
-}
-
-const stickers=["🚀","⭐","🔥","💎","🎮"];
-setInterval(()=>{
-let sticker=document.createElement("div");
-sticker.className="sticker";
-sticker.innerText=stickers[Math.floor(Math.random()*stickers.length)];
-sticker.style.left=Math.random()*100+"vw";
-sticker.style.animationDuration=(Math.random()*5+3)+"s";
-document.body.appendChild(sticker);
-setTimeout(()=>{sticker.remove();},8000);
-},400);
-
-document.addEventListener("mousemove",(e)=>{
-let sparkle=document.createElement("div");
-sparkle.className="sparkle";
-sparkle.style.left=e.clientX+"px";
-sparkle.style.top=e.clientY+"px";
-document.body.appendChild(sparkle);
-setTimeout(()=>{sparkle.remove();},800);
-});
-
-async function loadStatsAndHistory(){
-    try{
-        const [statsRes, historyRes] = await Promise.all([
-            fetch('/api/stats'),
-            fetch('/api/history?limit=8')
-        ]);
-        const stats = await statsRes.json();
-        const history = await historyRes.json();
-
-        document.getElementById('statAttempts').textContent = stats.attempts ?? 0;
-        document.getElementById('statScore').textContent = stats.total_score ?? 0;
-        document.getElementById('statQuestions').textContent = stats.total_questions ?? 0;
-        document.getElementById('statAverage').textContent = `${stats.average_percent ?? 0}%`;
-
-        const tbody = document.getElementById('historyBody');
-        if(!history.length){
-            tbody.innerHTML = '<tr><td colspan="5">No attempts yet.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = history.map(item => `
-            <tr>
-                <td>${item.date || '-'}</td>
-                <td>${(item.topic || '-').slice(0,40)}</td>
-                <td>${item.score}/${item.total}</td>
-                <td>${item.difficulty || '-'}</td>
-                <td>${item.provider || '-'}</td>
-            </tr>
-        `).join('');
-    }catch(error){
-        console.error('Failed to load dashboard data', error);
-    }
-}
-
-loadStatsAndHistory();
-</script>
-
+    buddyFab.addEventListener('click', ()=>buddyPanel.classList.toggle('buddy-hidden'));
+    buddyClose.addEventListener('click', ()=>buddyPanel.classList.add('buddy-hidden'));
+    buddySend.addEventListener('click', sendBuddyMessage);
+    buddyInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); sendBuddyMessage(); } });
+  </script>
 </body>
 </html>

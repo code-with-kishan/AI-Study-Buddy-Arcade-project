@@ -3,6 +3,7 @@ from datetime import datetime
 from functools import wraps
 from pathlib import Path
 import io
+import json
 import logging
 import os
 import random
@@ -17,9 +18,11 @@ import requests
 from dotenv import load_dotenv
 from flask import Flask, Response, flash, g, jsonify, redirect, render_template, request, session, url_for
 from pypdf import PdfReader
-from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfgen import canvas
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
 
 load_dotenv()
@@ -60,11 +63,80 @@ LEVELS = [
     (1500, "Legend", "👑"),
 ]
 
+PYQ_BANK = {
+    "jee": [
+        {
+            "id": "jee_1",
+            "topic": "Kinematics",
+            "question": "A particle starts from rest with acceleration 2 m/s^2. Find displacement in 4s.",
+            "options": ["8 m", "16 m", "24 m", "32 m"],
+            "answer": "16 m",
+            "solution": "Use s = ut + 1/2 at^2. Here u=0, a=2, t=4. So s = 0 + 1/2 * 2 * 16 = 16 m.",
+        },
+        {
+            "id": "jee_2",
+            "topic": "Quadratic Equations",
+            "question": "For x^2 - 5x + 6 = 0, the roots are:",
+            "options": ["1 and 6", "2 and 3", "-2 and -3", "0 and 6"],
+            "answer": "2 and 3",
+            "solution": "Factor: x^2 - 5x + 6 = (x-2)(x-3). So roots are x=2 and x=3.",
+        },
+    ],
+    "neet": [
+        {
+            "id": "neet_1",
+            "topic": "Human Physiology",
+            "question": "Which chamber of heart pumps oxygenated blood to body?",
+            "options": ["Right atrium", "Right ventricle", "Left atrium", "Left ventricle"],
+            "answer": "Left ventricle",
+            "solution": "Left ventricle contracts and sends oxygen-rich blood into aorta for systemic circulation.",
+        },
+        {
+            "id": "neet_2",
+            "topic": "Cell Biology",
+            "question": "Powerhouse of the cell is:",
+            "options": ["Golgi body", "Ribosome", "Mitochondria", "Lysosome"],
+            "answer": "Mitochondria",
+            "solution": "Mitochondria produce ATP through cellular respiration, so called powerhouse of the cell.",
+        },
+    ],
+}
+
+DEMO_TEST_BANK = [
+    {"id": "d1", "topic": "Kinematics", "question": "Unit of acceleration?", "options": ["m/s", "m/s^2", "kg", "N"], "answer": "m/s^2"},
+    {"id": "d2", "topic": "Algebra", "question": "If 2x+3=11, x=?", "options": ["2", "3", "4", "5"], "answer": "4"},
+    {"id": "d3", "topic": "Biology", "question": "DNA full form?", "options": ["Deoxy...", "Dynamic...", "Double...", "None"], "answer": "Deoxy..."},
+]
+
+MOCK_TEST_BANK = [
+    {"id": "m1", "topic": "Mechanics", "question": "Work formula?", "options": ["F.v", "F/s", "mgh", "P/t"], "answer": "F.v"},
+    {"id": "m2", "topic": "Chemistry", "question": "pH of neutral water?", "options": ["0", "7", "14", "1"], "answer": "7"},
+    {"id": "m3", "topic": "Trigonometry", "question": "sin 30 equals", "options": ["1", "1/2", "0", "sqrt(3)"], "answer": "1/2"},
+    {"id": "m4", "topic": "Biology", "question": "Functional unit of kidney?", "options": ["Neuron", "Nephron", "Alveoli", "Axon"], "answer": "Nephron"},
+]
+
+CONTEST_BANK = [
+    {"id": "c1", "topic": "Math", "question": "Derivative of x^2?", "options": ["x", "2x", "x^3", "2"], "answer": "2x"},
+    {"id": "c2", "topic": "Physics", "question": "Unit of Force?", "options": ["Joule", "Watt", "Newton", "Pascal"], "answer": "Newton"},
+    {"id": "c3", "topic": "Biology", "question": "Genetic material in most organisms?", "options": ["RNA", "DNA", "Protein", "Lipid"], "answer": "DNA"},
+]
+
 _gemini_client = None
 
 
 def create_app() -> Flask:
     app = Flask(__name__)
+
+    cors_origins = [
+        origin.strip().rstrip("/")
+        for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
+    frontend_origin = (os.getenv("FRONTEND_ORIGIN") or "").strip().rstrip("/")
+    if frontend_origin and frontend_origin not in cors_origins:
+        cors_origins.append(frontend_origin)
+    cross_site = bool(cors_origins)
+
     app.config.update(
         SECRET_KEY=os.getenv("FLASK_SECRET_KEY", "change-me-in-production"),
         DATABASE_PATH=str(BASE_DIR / os.getenv("DATABASE_FILE", "database.db")),
@@ -72,7 +144,14 @@ def create_app() -> Flask:
         RATE_LIMIT_PER_MINUTE=int(os.getenv("RATE_LIMIT_PER_MINUTE", "45")),
         MAX_CONTENT_LENGTH=8 * 1024 * 1024,
         JSON_SORT_KEYS=False,
+        CORS_ALLOWED_ORIGINS=cors_origins,
+        SESSION_COOKIE_SAMESITE="None" if cross_site else "Lax",
+        SESSION_COOKIE_SECURE=(
+            os.getenv("SESSION_COOKIE_SECURE", "true" if cross_site else "false").lower() == "true"
+        ),
+        SESSION_COOKIE_HTTPONLY=True,
     )
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     logging.basicConfig(
         level=os.getenv("LOG_LEVEL", "INFO"),
@@ -161,6 +240,90 @@ def init_db(app: Flask) -> None:
         )
         """
     )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS notes_exports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            source_type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            raw_content TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pyq_attempt_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            exam_type TEXT NOT NULL,
+            question_id TEXT NOT NULL,
+            topic TEXT NOT NULL,
+            attempt_no INTEGER NOT NULL,
+            selected_answer TEXT,
+            is_correct INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS test_attempts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            test_type TEXT NOT NULL,
+            score INTEGER NOT NULL,
+            total INTEGER NOT NULL,
+            weak_topics TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS study_hours (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            minutes INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            UNIQUE(user_id, date),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS weekly_contest_scores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            week_key TEXT NOT NULL,
+            score INTEGER NOT NULL,
+            total INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE(user_id, week_key),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS reminders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            reminder_type TEXT NOT NULL,
+            remind_at TEXT NOT NULL,
+            is_done INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
 
     user_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
     if "xp" not in user_columns:
@@ -177,6 +340,10 @@ def init_db(app: Flask) -> None:
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_xp ON users(xp DESC)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_owner_profiles_user_id ON owner_profiles(user_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_pyq_attempt_user ON pyq_attempt_logs(user_id, exam_type, question_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_test_attempt_user ON test_attempts(user_id, test_type)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_study_hours_user ON study_hours(user_id, date)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_contest_week ON weekly_contest_scores(week_key, score DESC)")
     conn.commit()
     conn.close()
 
@@ -288,41 +455,366 @@ def get_leaderboard(app: Flask, limit: int = 20):
     return leaderboard
 
 
-def generate_pdf(title: str, lines: list[str]) -> bytes:
+def strip_html(text: str) -> str:
+    return re.sub(r"<[^>]*>", "", text or "")
+
+
+def get_week_key() -> str:
+    return datetime.utcnow().strftime("%Y-W%U")
+
+
+def _draw_notebook_background(pdf: canvas.Canvas, width: float, height: float) -> None:
+    pdf.setFillColor(colors.HexColor("#fff9e6"))
+    pdf.rect(0, 0, width, height, fill=1, stroke=0)
+    pdf.setStrokeColor(colors.HexColor("#c7d2fe"))
+    for y in range(60, int(height), 24):
+        pdf.line(40, y, width - 25, y)
+    pdf.setStrokeColor(colors.HexColor("#fca5a5"))
+    pdf.line(70, 40, 70, height - 40)
+
+
+def _normalize_handwritten_lines(content: str) -> list[str]:
+    cleaned = strip_html(content or "")
+    cleaned = cleaned.replace("\r", "\n")
+    raw_lines = [line.strip() for line in cleaned.splitlines() if line.strip()]
+
+    normalized = []
+    for line in raw_lines:
+        # Remove markdown-style heading and list markers for cleaner human-like notes.
+        line = re.sub(r"^#{1,6}\s*", "", line)
+        line = re.sub(r"^[-*+•]+\s*", "", line)
+        line = re.sub(r"^\d+[\.)]\s*", "", line)
+        line = line.replace("**", "").replace("__", "").replace("`", "")
+        line = re.sub(r"\s+", " ", line).strip()
+        if line:
+            normalized.append(line)
+
+    if not normalized:
+        normalized = ["No generated content found."]
+
+    return normalized
+
+
+def build_handwritten_notes_pdf(title: str, content: str, student_name: str) -> bytes:
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    y = height - 50
+    pages = []
+    lines = _normalize_handwritten_lines(content)
 
-    pdf.setFont("Helvetica-Bold", 14)
-    pdf.drawString(40, y, title)
-    y -= 28
-    pdf.setFont("Helvetica", 10)
+    chunk = []
+    for line in lines:
+        chunk.append(line)
+        if len(chunk) >= 22:
+            pages.append(chunk)
+            chunk = []
+    if chunk:
+        pages.append(chunk)
 
-    for raw_line in lines:
-        line = raw_line or ""
-        chunks = [line[i:i + 100] for i in range(0, len(line), 100)] or [""]
-        for chunk in chunks:
-            if y < 50:
-                pdf.showPage()
-                pdf.setFont("Helvetica", 10)
-                y = height - 50
-            pdf.drawString(40, y, chunk)
-            y -= 14
+    palette = [
+        colors.HexColor("#7c3aed"),
+        colors.HexColor("#db2777"),
+        colors.HexColor("#0ea5e9"),
+        colors.HexColor("#16a34a"),
+        colors.HexColor("#ea580c"),
+    ]
+
+    for page_lines in pages:
+        _draw_notebook_background(pdf, width, height)
+
+        pdf.saveState()
+        pdf.translate(20, height / 2)
+        pdf.rotate(90)
+        pdf.setFillColor(colors.HexColor("#0f172a"))
+        pdf.setFont("Helvetica-Bold", 11)
+        pdf.drawString(0, 0, "AI Study Buddy")
+        pdf.restoreState()
+
+        pdf.setFillColor(colors.HexColor("#1f2937"))
+        pdf.setFont("Helvetica-Bold", 20)
+        pdf.drawString(90, height - 55, title[:60])
+        pdf.setFont("Helvetica-Oblique", 11)
+        pdf.setFillColor(colors.HexColor("#334155"))
+        pdf.drawString(90, height - 75, f"Student: {student_name}")
+
+        y = height - 110
+        for i, line in enumerate(page_lines):
+            color = palette[i % len(palette)]
+            pdf.setFillColor(color)
+            pdf.setFont("Helvetica-Oblique", 12)
+            safe_line = line[:92]
+            pdf.drawString(90, y, safe_line)
+            if i % 5 == 0:
+                pdf.setStrokeColor(colors.HexColor("#f59e0b"))
+                pdf.line(84, y - 2, width - 40, y - 2)
+            y -= 24
+
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.setFillColor(colors.HexColor("#0f172a"))
+        pdf.drawString(40, 24, "Owner: Kishan Nishad (AI Study Buddy)")
+        pdf.showPage()
 
     pdf.save()
     buffer.seek(0)
     return buffer.read()
 
 
-def strip_html(text: str) -> str:
-    return re.sub(r"<[^>]*>", "", text or "")
+def build_certificate_pdf(student_name: str, score: int, total: int) -> bytes:
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=landscape(A4))
+    width, height = A4
+    width, height = height, width
+
+    pdf.setFillColor(colors.HexColor("#f1f5f9"))
+    pdf.rect(0, 0, width, height, fill=1, stroke=0)
+    pdf.setStrokeColor(colors.HexColor("#f59e0b"))
+    pdf.setLineWidth(6)
+    pdf.rect(24, 24, width - 48, height - 48, fill=0, stroke=1)
+
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.setFont("Helvetica-Bold", 34)
+    pdf.drawCentredString(width / 2, height - 88, "AI Study Buddy")
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.setFillColor(colors.HexColor("#0369a1"))
+    pdf.drawCentredString(width / 2, height - 110, "Authorized Academic Excellence Certificate")
+
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.setFillColor(colors.HexColor("#7c3aed"))
+    pdf.drawCentredString(width / 2, height - 145, "Certificate of Achievement")
+
+    pdf.setFillColor(colors.HexColor("#1f2937"))
+    pdf.setFont("Helvetica", 13)
+    pdf.drawCentredString(width / 2, height - 185, "This certificate is formally awarded to")
+    pdf.setFont("Helvetica-Bold", 26)
+    pdf.drawCentredString(width / 2, height - 220, student_name[:40])
+
+    percent = round((score / max(total, 1)) * 100, 2)
+    pdf.setFont("Helvetica", 14)
+    pdf.drawCentredString(width / 2, height - 255, f"Performance: {score}/{total} ({percent}%)")
+
+    pdf.setFillColor(colors.HexColor("#1e293b"))
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(70, height - 302, "Academic Theory Highlights")
+    pdf.setFont("Helvetica", 11)
+    theory_lines = [
+        "1. Consistent retrieval practice improves long-term memory consolidation.",
+        "2. Spaced repetition and mixed-topic revision strengthen exam adaptability.",
+        "3. Error analysis converts weak areas into high-scoring opportunities.",
+    ]
+    y = height - 322
+    for line in theory_lines:
+        pdf.drawString(72, y, line)
+        y -= 18
+
+    pdf.setFillColor(colors.HexColor("#334155"))
+    pdf.setFont("Helvetica", 10)
+    doc_id = f"ASB-CERT-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    pdf.drawString(70, 88, f"Document ID: {doc_id}")
+    pdf.drawString(70, 72, "Status: Digitally authorized for AI Study Buddy Academic Records")
+
+    pdf.setStrokeColor(colors.HexColor("#94a3b8"))
+    pdf.line(width - 260, 120, width - 70, 120)
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.drawString(width - 248, 102, "Kishan Nishad (Owner)")
+
+    pdf.setStrokeColor(colors.HexColor("#0284c7"))
+    pdf.circle(width - 92, 88, 24, stroke=1, fill=0)
+    pdf.setFont("Helvetica-Bold", 8)
+    pdf.drawCentredString(width - 92, 90, "ASB")
+    pdf.setFont("Helvetica", 7)
+    pdf.drawCentredString(width - 92, 80, "AUTHORIZED")
+
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.drawString(28, 24, "AI Study Buddy • Authorized Academic Certification")
+
+    pdf.save()
+    buffer.seek(0)
+    return buffer.read()
+
+
+def build_report_card_pdf(student_name: str, accuracy: float, tests: list, weak_topics: list[str]) -> bytes:
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=landscape(A4))
+    width, height = landscape(A4)
+
+    pdf.setFillColor(colors.HexColor("#eef2ff"))
+    pdf.rect(0, 0, width, height, fill=1, stroke=0)
+    pdf.setStrokeColor(colors.HexColor("#2563eb"))
+    pdf.setLineWidth(5)
+    pdf.rect(24, 24, width - 48, height - 48, fill=0, stroke=1)
+
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(44, height - 58, "AI Study Buddy")
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.setFillColor(colors.HexColor("#1d4ed8"))
+    pdf.drawString(46, height - 80, "Authorized Performance Report Card")
+
+    pdf.setFillColor(colors.HexColor("#111827"))
+    pdf.setFont("Helvetica", 12)
+    pdf.drawString(46, height - 110, f"Student Name: {student_name[:40]}")
+    pdf.drawString(46, height - 128, f"Overall Accuracy: {accuracy}%")
+    pdf.drawString(46, height - 146, f"Total Tests Evaluated: {len(tests)}")
+
+    theory_lines = [
+        "Learning Theory: frequent low-stakes tests improve retention and reduce exam anxiety.",
+        "Revision Theory: topic interleaving increases concept transfer in mixed problem sets.",
+        "Performance Theory: mistake logging and corrective review raise score consistency.",
+    ]
+    pdf.setFillColor(colors.HexColor("#1e293b"))
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(46, height - 178, "Academic Theory Notes")
+    pdf.setFont("Helvetica", 10)
+    y = height - 196
+    for line in theory_lines:
+        pdf.drawString(48, y, line)
+        y -= 16
+
+    pdf.setFillColor(colors.HexColor("#7f1d1d"))
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(46, height - 254, "Weak Topics")
+    pdf.setFont("Helvetica", 10)
+    weak = weak_topics[:8] if weak_topics else ["No major weak topic detected yet"]
+    y = height - 272
+    for topic in weak:
+        pdf.drawString(48, y, f"- {topic}")
+        y -= 14
+
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(width / 2 + 20, height - 178, "Recent Test Performance")
+    pdf.setFont("Helvetica", 10)
+    y = height - 196
+    for row in tests[:10]:
+        line = f"{row['created_at']}  |  {row['test_type'].upper()}  |  {row['score']}/{row['total']}"
+        pdf.drawString(width / 2 + 20, y, line[:70])
+        y -= 14
+    if not tests:
+        pdf.drawString(width / 2 + 20, y, "No recent tests available.")
+
+    doc_id = f"ASB-RPT-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    pdf.setFillColor(colors.HexColor("#334155"))
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(46, 64, f"Document ID: {doc_id}")
+    pdf.drawString(46, 48, "Status: Authorized and generated by AI Study Buddy evaluation engine")
+
+    pdf.setStrokeColor(colors.HexColor("#94a3b8"))
+    pdf.line(width - 260, 92, width - 70, 92)
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(width - 250, 74, "Kishan Nishad (Owner)")
+
+    pdf.setStrokeColor(colors.HexColor("#2563eb"))
+    pdf.circle(width - 92, 62, 24, stroke=1, fill=0)
+    pdf.setFont("Helvetica-Bold", 8)
+    pdf.drawCentredString(width - 92, 64, "ASB")
+    pdf.setFont("Helvetica", 7)
+    pdf.drawCentredString(width - 92, 54, "AUTH")
+
+    pdf.save()
+    buffer.seek(0)
+    return buffer.read()
+
+
+def parse_weak_topics(topic_result_pairs: list[tuple[str, bool]]) -> list[str]:
+    topic_wrong_counts: dict[str, int] = {}
+    for topic, is_correct in topic_result_pairs:
+        if not is_correct:
+            topic_wrong_counts[topic] = topic_wrong_counts.get(topic, 0) + 1
+    ordered = sorted(topic_wrong_counts.items(), key=lambda item: item[1], reverse=True)
+    return [item[0] for item in ordered]
+
+
+def get_streak_calendar(app: Flask, user_id: int, days: int = 120) -> list[dict]:
+    conn = get_db_connection(app)
+    rows = conn.execute(
+        """
+        SELECT date, minutes
+        FROM study_hours
+        WHERE user_id = ?
+        ORDER BY date DESC
+        LIMIT ?
+        """,
+        (user_id, days),
+    ).fetchall()
+    conn.close()
+    return [{"date": row["date"], "minutes": int(row["minutes"])} for row in rows]
+
+
+def compute_streak_count(calendar_rows: list[dict]) -> int:
+    if not calendar_rows:
+        return 0
+    day_minutes = {row["date"]: row["minutes"] for row in calendar_rows}
+    streak = 0
+    cursor = datetime.utcnow().date()
+    while True:
+        day_key = cursor.strftime("%Y-%m-%d")
+        if day_minutes.get(day_key, 0) >= 60:
+            streak += 1
+            cursor = cursor.fromordinal(cursor.toordinal() - 1)
+        else:
+            break
+    return streak
+
+
+def get_report_card_data(app: Flask, user_id: int) -> tuple[list, float, list[str]]:
+    conn = get_db_connection(app)
+    tests = conn.execute(
+        """
+        SELECT test_type, score, total, weak_topics, created_at
+        FROM test_attempts
+        WHERE user_id = ?
+        ORDER BY id DESC
+        LIMIT 20
+        """,
+        (user_id,),
+    ).fetchall()
+
+    pyq_rows = conn.execute(
+        """
+        SELECT topic, is_correct
+        FROM pyq_attempt_logs
+        WHERE user_id = ?
+        ORDER BY id DESC
+        LIMIT 100
+        """,
+        (user_id,),
+    ).fetchall()
+    conn.close()
+
+    total_score = sum(int(row["score"]) for row in tests)
+    total_questions = sum(int(row["total"]) for row in tests)
+    accuracy = round((total_score / max(total_questions, 1)) * 100, 2)
+    weak_topics = parse_weak_topics([(row["topic"], bool(row["is_correct"])) for row in pyq_rows])
+    if not weak_topics:
+        weak_topics = ["No major weak topic detected yet"]
+
+    return tests, accuracy, weak_topics
 
 
 def register_hooks(app: Flask) -> None:
+    def maybe_add_cors_headers(response: Response) -> Response:
+        origin = (request.headers.get("Origin") or "").rstrip("/")
+        allowed = app.config.get("CORS_ALLOWED_ORIGINS", [])
+        if origin and origin in allowed:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response.headers["Vary"] = "Origin"
+        return response
+
     @app.before_request
     def load_logged_user():
         g.user = get_current_user(app)
+
+    @app.before_request
+    def handle_preflight():
+        if request.method == "OPTIONS":
+            return maybe_add_cors_headers(app.make_default_options_response())
+        return None
 
     @app.before_request
     def basic_rate_limit():
@@ -351,7 +843,7 @@ def register_hooks(app: Flask) -> None:
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Cache-Control"] = "no-store" if request.path.startswith("/api/") else "public, max-age=60"
-        return response
+        return maybe_add_cors_headers(response)
 
     @app.context_processor
     def inject_user_level():
@@ -755,8 +1247,8 @@ def register_routes(app: Flask) -> None:
     @app.get("/")
     def root():
         if g.user:
-            return redirect(url_for("chat"))
-        return redirect(url_for("login"))
+            return redirect(url_for("dashboard"))
+        return render_template("index.html")
 
     @app.route("/signup", methods=["GET", "POST"])
     def signup():
@@ -1033,18 +1525,12 @@ def register_routes(app: Flask) -> None:
             level_info=get_level_info(int(g.user["xp"])),
         )
 
-    @app.get("/leaderboard")
-    @login_required
-    def leaderboard_page():
-        leaderboard = get_leaderboard(app, 50)
-        return render_template("leaderboard.html", user=g.user, leaderboard=leaderboard, level_info=get_level_info(int(g.user["xp"])))
-
     @app.get("/xp-center")
     @login_required
     def xp_center():
         level_info = get_level_info(int(g.user["xp"]))
         events = get_user_xp_events(app, g.user["id"], 25)
-        leaderboard = get_leaderboard(app, 10)
+        leaderboard = get_leaderboard(app, 50)
         return render_template(
             "xp_center.html",
             user=g.user,
@@ -1169,59 +1655,538 @@ def register_routes(app: Flask) -> None:
     def leaderboard_api():
         return jsonify(get_leaderboard(app, 20))
 
-    @app.get("/export_scores.pdf")
+    @app.route("/notes-lab", methods=["GET", "POST"])
     @login_required
-    def export_scores_pdf():
+    def notes_lab():
+        source_text = ""
+        explanation_html = ""
+        teacher_mode = request.form.get("teacher_mode", "normal")
+        provider = request.form.get("provider", "gemini")
+
+        if request.method == "POST":
+            action = request.form.get("action", "from_chat")
+            title = (request.form.get("title") or "Handwritten Notes").strip()[:80]
+            manual_summary = (request.form.get("book_summary") or "").strip()[:6000]
+            uploaded_pdf = request.files.get("pdf_file")
+
+            if action == "from_chat":
+                source_text = session.get("last_response_text", "")
+            elif action == "from_pdf":
+                try:
+                    source_text = extract_pdf_text(uploaded_pdf)
+                except ValueError as err:
+                    flash(str(err), "error")
+            elif action == "from_summary":
+                source_text = manual_summary
+
+            if source_text:
+                strictness_map = {
+                    "normal": "Give clear but friendly notes.",
+                    "strict": "Keep it concise, challenge-oriented, less hinting.",
+                    "very_strict": "Exam-level concise and strict guidance.",
+                }
+                prompt = (
+                    f"Convert this study content into clean colorful handwritten notes in plain natural sentences. "
+                    "Do not use markdown symbols like #, *, -, bullets, numbering, or arrows. "
+                    f"{strictness_map.get(teacher_mode, strictness_map['normal'])}\n\n{source_text[:9000]}"
+                )
+                try:
+                    explanation_html, provider, warning, raw_response = generate_ai_response(
+                        topic=prompt,
+                        mode="summarize",
+                        difficulty="Easy",
+                        provider=provider,
+                        timeout=app.config["REQUEST_TIMEOUT"],
+                    )
+                    if warning:
+                        flash(warning, "error")
+                    source_text = raw_response or source_text
+                except Exception:
+                    app.logger.exception("Notes generation failed")
+                    explanation_html = sanitize_markdown(source_text)
+
+                conn = get_db_connection(app)
+                conn.execute(
+                    """
+                    INSERT INTO notes_exports (user_id, source_type, title, raw_content, created_at)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        g.user["id"],
+                        action,
+                        title,
+                        source_text[:12000],
+                        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                    ),
+                )
+                conn.commit()
+                conn.close()
+
+                pdf_bytes = build_handwritten_notes_pdf(title, source_text, g.user["username"])
+                session["last_notes_text"] = source_text
+                session["last_notes_title"] = title
+                return Response(
+                    pdf_bytes,
+                    mimetype="application/pdf",
+                    headers={"Content-Disposition": "attachment; filename=handwritten_notes.pdf"},
+                )
+            flash("Please provide chat response, book summary, or PDF.", "error")
+
+        return render_template(
+            "notes_lab.html",
+            user=g.user,
+            explanation_html=explanation_html,
+            level_info=get_level_info(int(g.user["xp"])),
+        )
+
+    @app.route("/topic-learning", methods=["GET", "POST"])
+    @login_required
+    def topic_learning():
+        topic = ""
+        explanation = ""
+        notes_points = []
+        practice_questions = []
+        teacher_mode = "normal"
+        provider = "gemini"
+
+        if request.method == "POST":
+            topic = (request.form.get("topic") or "").strip()[:400]
+            teacher_mode = request.form.get("teacher_mode", "normal")
+            provider = request.form.get("provider", "gemini")
+            if topic:
+                mode_prompt = {
+                    "normal": "Teach with balanced explanation and hints.",
+                    "strict": "Use strict exam style, fewer hints.",
+                    "very_strict": "Use very strict exam-level guidance with challenge tasks.",
+                }
+                enriched_topic = (
+                    f"Topic: {topic}\n"
+                    f"Instruction: {mode_prompt.get(teacher_mode, mode_prompt['normal'])}\n"
+                    "Return: explanation, notes bullets, diagram pointers, and 4 practice questions."
+                )
+                try:
+                    explanation, provider, warning, raw_response = generate_ai_response(
+                        topic=enriched_topic,
+                        mode="explain",
+                        difficulty="Medium",
+                        provider=provider,
+                        timeout=app.config["REQUEST_TIMEOUT"],
+                    )
+                    if warning:
+                        flash(warning, "error")
+                    text_blob = strip_html(raw_response or explanation)
+                except Exception:
+                    app.logger.exception("Topic learning generation failed")
+                    text_blob = (
+                        f"Topic overview for {topic}. Focus on concept, formulas, visual model, and exam strategy."
+                    )
+                    explanation = sanitize_markdown(text_blob)
+
+                notes_points = [line.strip("- ").strip() for line in text_blob.splitlines() if line.strip()][:8]
+                if not notes_points:
+                    notes_points = [
+                        f"Core definition of {topic}",
+                        "Key formula and variable meaning",
+                        "Common mistakes to avoid",
+                        "Exam shortcut method",
+                    ]
+                practice_questions = [
+                    f"Explain the fundamental principle of {topic} in your own words.",
+                    f"Solve one medium-level numerical from {topic}.",
+                    f"List two common mistakes in {topic} and corrections.",
+                    f"Write one exam-focused short note on {topic}.",
+                ]
+
+        return render_template(
+            "topic_learning.html",
+            user=g.user,
+            topic=topic,
+            explanation=explanation,
+            notes_points=notes_points,
+            practice_questions=practice_questions,
+            teacher_mode=teacher_mode,
+            provider=provider,
+            level_info=get_level_info(int(g.user["xp"])),
+        )
+
+    @app.get("/graphs")
+    @login_required
+    def graphs_page():
+        return render_template("graphs.html", user=g.user, level_info=get_level_info(int(g.user["xp"])))
+
+    @app.route("/pyq", methods=["GET", "POST"])
+    @login_required
+    def pyq_page():
+        exam_type = (request.values.get("exam") or "jee").lower()
+        if exam_type not in PYQ_BANK:
+            exam_type = "jee"
+
+        questions = PYQ_BANK[exam_type]
+        selected_question = questions[0]
+        question_id = request.values.get("question_id")
+        if question_id:
+            for item in questions:
+                if item["id"] == question_id:
+                    selected_question = item
+                    break
+
+        feedback = None
+        show_solution = False
+        attempts_left = 2
+
         conn = get_db_connection(app)
-        rows = conn.execute(
+        attempts_count = conn.execute(
             """
-            SELECT topic, score, total, difficulty, provider, date
-            FROM quiz_scores
+            SELECT COUNT(*) as count
+            FROM pyq_attempt_logs
+            WHERE user_id = ? AND exam_type = ? AND question_id = ?
+            """,
+            (g.user["id"], exam_type, selected_question["id"]),
+        ).fetchone()["count"]
+        attempts_left = max(0, 2 - int(attempts_count))
+
+        if request.method == "POST":
+            answer = (request.form.get("answer") or "").strip()
+            if attempts_count < 2:
+                next_attempt = attempts_count + 1
+                is_correct = int(answer == selected_question["answer"])
+                conn.execute(
+                    """
+                    INSERT INTO pyq_attempt_logs (
+                        user_id, exam_type, question_id, topic, attempt_no, selected_answer, is_correct, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        g.user["id"],
+                        exam_type,
+                        selected_question["id"],
+                        selected_question["topic"],
+                        next_attempt,
+                        answer,
+                        is_correct,
+                        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                    ),
+                )
+                conn.commit()
+
+                if is_correct:
+                    feedback = "Correct answer. Great job!"
+                    show_solution = True
+                else:
+                    feedback = "Incorrect answer."
+                    show_solution = next_attempt >= 2
+                attempts_left = max(0, 2 - next_attempt)
+            else:
+                feedback = "Attempt limit reached for this question."
+                show_solution = True
+
+        conn.close()
+
+        if attempts_left == 0:
+            show_solution = True
+
+        return render_template(
+            "pyq.html",
+            user=g.user,
+            exam_type=exam_type,
+            questions=questions,
+            selected_question=selected_question,
+            feedback=feedback,
+            attempts_left=attempts_left,
+            show_solution=show_solution,
+            level_info=get_level_info(int(g.user["xp"])),
+        )
+
+    @app.route("/demo-test", methods=["GET", "POST"])
+    @login_required
+    def demo_test():
+        report = None
+        if request.method == "POST":
+            score = 0
+            topic_results = []
+            for q in DEMO_TEST_BANK:
+                selected = request.form.get(f"q_{q['id']}", "")
+                correct = selected == q["answer"]
+                topic_results.append((q["topic"], correct))
+                if correct:
+                    score += 1
+
+            weak_topics = parse_weak_topics(topic_results)
+            conn = get_db_connection(app)
+            conn.execute(
+                """
+                INSERT INTO test_attempts (user_id, test_type, score, total, weak_topics, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    g.user["id"],
+                    "demo",
+                    score,
+                    len(DEMO_TEST_BANK),
+                    json.dumps(weak_topics),
+                    datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                ),
+            )
+            conn.commit()
+            conn.close()
+
+            report = {
+                "score": score,
+                "total": len(DEMO_TEST_BANK),
+                "accuracy": round((score / max(len(DEMO_TEST_BANK), 1)) * 100, 2),
+                "weak_topics": weak_topics,
+            }
+
+        return render_template(
+            "demo_test.html",
+            user=g.user,
+            questions=DEMO_TEST_BANK,
+            report=report,
+            level_info=get_level_info(int(g.user["xp"])),
+        )
+
+    @app.route("/mock-test", methods=["GET", "POST"])
+    @login_required
+    def mock_test():
+        report = None
+        if request.method == "POST":
+            score = 0
+            topic_results = []
+            for q in MOCK_TEST_BANK:
+                selected = request.form.get(f"q_{q['id']}", "")
+                correct = selected == q["answer"]
+                topic_results.append((q["topic"], correct))
+                if correct:
+                    score += 1
+
+            weak_topics = parse_weak_topics(topic_results)
+            conn = get_db_connection(app)
+            conn.execute(
+                """
+                INSERT INTO test_attempts (user_id, test_type, score, total, weak_topics, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    g.user["id"],
+                    "mock",
+                    score,
+                    len(MOCK_TEST_BANK),
+                    json.dumps(weak_topics),
+                    datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                ),
+            )
+            conn.commit()
+            conn.close()
+
+            session["last_mock_score"] = score
+            session["last_mock_total"] = len(MOCK_TEST_BANK)
+
+            report = {
+                "score": score,
+                "total": len(MOCK_TEST_BANK),
+                "accuracy": round((score / max(len(MOCK_TEST_BANK), 1)) * 100, 2),
+                "weak_topics": weak_topics,
+                "suggestions": [
+                    "Revise weakest topic first with 25-minute blocks.",
+                    "Solve 10 targeted MCQs daily.",
+                    "Re-attempt mock after 48 hours.",
+                ],
+            }
+
+        return render_template(
+            "mock_test.html",
+            user=g.user,
+            questions=MOCK_TEST_BANK,
+            report=report,
+            level_info=get_level_info(int(g.user["xp"])),
+        )
+
+    @app.get("/certificate.pdf")
+    @login_required
+    def certificate_pdf():
+        score = int(session.get("last_mock_score", 0))
+        total = int(session.get("last_mock_total", len(MOCK_TEST_BANK)))
+        pdf_data = build_certificate_pdf(g.user["username"], score, total)
+        return Response(
+            pdf_data,
+            mimetype="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=mock_certificate.pdf"},
+        )
+
+    @app.get("/streak")
+    @login_required
+    def streak_page():
+        rows = get_streak_calendar(app, g.user["id"], 140)
+        streak_count = compute_streak_count(rows)
+        return render_template(
+            "streak.html",
+            user=g.user,
+            rows=rows,
+            streak_count=streak_count,
+            level_info=get_level_info(int(g.user["xp"])),
+        )
+
+    @app.post("/api/streak/log-hour")
+    @login_required
+    def streak_log_hour():
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        conn = get_db_connection(app)
+        conn.execute(
+            """
+            INSERT INTO study_hours (user_id, date, minutes, created_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(user_id, date) DO UPDATE SET
+                minutes = minutes + 60
+            """,
+            (g.user["id"], today, 60, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
+        )
+        conn.commit()
+        conn.close()
+
+        rows = get_streak_calendar(app, g.user["id"], 140)
+        streak_count = compute_streak_count(rows)
+        return jsonify(
+            {
+                "message": "Your 1-hour streak is complete!",
+                "streak_count": streak_count,
+            }
+        )
+
+    @app.route("/weekly-contest", methods=["GET", "POST"])
+    @login_required
+    def weekly_contest():
+        week_key = get_week_key()
+        your_score = None
+
+        if request.method == "POST":
+            score = 0
+            for q in CONTEST_BANK:
+                if request.form.get(f"q_{q['id']}", "") == q["answer"]:
+                    score += 1
+
+            conn = get_db_connection(app)
+            conn.execute(
+                """
+                INSERT INTO weekly_contest_scores (user_id, week_key, score, total, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(user_id, week_key) DO UPDATE SET
+                    score = MAX(score, excluded.score),
+                    total = excluded.total,
+                    created_at = excluded.created_at
+                """,
+                (
+                    g.user["id"],
+                    week_key,
+                    score,
+                    len(CONTEST_BANK),
+                    datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                ),
+            )
+            conn.commit()
+            conn.close()
+            your_score = score
+
+        conn = get_db_connection(app)
+        leaderboard_rows = conn.execute(
+            """
+            SELECT u.username, u.avatar, w.score, w.total
+            FROM weekly_contest_scores w
+            JOIN users u ON u.id = w.user_id
+            WHERE w.week_key = ?
+            ORDER BY w.score DESC, w.created_at ASC
+            LIMIT 50
+            """,
+            (week_key,),
+        ).fetchall()
+        conn.close()
+
+        return render_template(
+            "weekly_contest.html",
+            user=g.user,
+            week_key=week_key,
+            questions=CONTEST_BANK,
+            leaderboard=leaderboard_rows,
+            your_score=your_score,
+            level_info=get_level_info(int(g.user["xp"])),
+        )
+
+    @app.route("/reminders", methods=["GET", "POST"])
+    @login_required
+    def reminders_page():
+        if request.method == "POST":
+            title = (request.form.get("title") or "").strip()[:160]
+            reminder_type = (request.form.get("reminder_type") or "study").strip()[:40]
+            remind_at = (request.form.get("remind_at") or "").strip()[:40]
+
+            if title and remind_at:
+                conn = get_db_connection(app)
+                conn.execute(
+                    """
+                    INSERT INTO reminders (user_id, title, reminder_type, remind_at, is_done, created_at)
+                    VALUES (?, ?, ?, ?, 0, ?)
+                    """,
+                    (
+                        g.user["id"],
+                        title,
+                        reminder_type,
+                        remind_at,
+                        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                    ),
+                )
+                conn.commit()
+                conn.close()
+                flash("Reminder saved.", "success")
+            else:
+                flash("Reminder title and date-time are required.", "error")
+
+        conn = get_db_connection(app)
+        reminders = conn.execute(
+            """
+            SELECT id, title, reminder_type, remind_at, is_done
+            FROM reminders
             WHERE user_id = ?
-            ORDER BY id DESC
+            ORDER BY remind_at ASC
             """,
             (g.user["id"],),
         ).fetchall()
         conn.close()
 
-        lines = [f"User: {g.user['username']} ({g.user['avatar']})", f"XP: {g.user['xp']}", ""]
-        if not rows:
-            lines.append("No score entries found.")
-        else:
-            for row in rows:
-                lines.append(
-                    f"{row['date']} | {row['topic']} | Score {row['score']}/{row['total']} | {row['difficulty']} | {row['provider'] or '-'}"
-                )
-
-        data = generate_pdf("AI Study Buddy Score Report", lines)
-        return Response(
-            data,
-            mimetype="application/pdf",
-            headers={"Content-Disposition": "attachment; filename=quiz_scores.pdf"},
+        return render_template(
+            "reminders.html",
+            user=g.user,
+            reminders=reminders,
+            level_info=get_level_info(int(g.user["xp"])),
         )
 
-    @app.get("/export_response.pdf")
+    @app.get("/report-card")
     @login_required
-    def export_response_pdf():
-        response_text = session.get("last_response_text", "")
-        mode = session.get("last_response_mode", "unknown")
-        topic = session.get("last_response_topic", "")
-        if not response_text:
-            flash("No generated response available yet. Use Chat first.", "error")
-            return redirect(url_for("chat"))
+    def report_card():
+        tests, accuracy, weak_topics = get_report_card_data(app, g.user["id"])
 
-        lines = [f"Mode: {mode}", f"Prompt: {topic}", "", *strip_html(response_text).splitlines()]
-        data = generate_pdf("AI Study Buddy Generated Response", lines)
-        return Response(
-            data,
-            mimetype="application/pdf",
-            headers={"Content-Disposition": "attachment; filename=study_response.pdf"},
+        return render_template(
+            "report_card.html",
+            user=g.user,
+            tests=tests,
+            accuracy=accuracy,
+            weak_topics=weak_topics,
+            level_info=get_level_info(int(g.user["xp"])),
         )
 
-    @app.get("/health")
-    def health_page():
-        payload = healthz().get_json()
-        return render_template("health.html", user=g.user, health=payload)
+    @app.get("/report-card.pdf")
+    @login_required
+    def report_card_pdf():
+        tests, accuracy, weak_topics = get_report_card_data(app, g.user["id"])
+        pdf_data = build_report_card_pdf(g.user["username"], accuracy, tests, weak_topics)
+        return Response(
+            pdf_data,
+            mimetype="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=report_card.pdf"},
+        )
+
+    @app.get("/models-3d")
+    @login_required
+    def models_3d():
+        return render_template("models_3d.html", user=g.user, level_info=get_level_info(int(g.user["xp"])))
 
     @app.get("/healthz")
     def healthz():

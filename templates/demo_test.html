@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Demo Test · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:14px}
+  .q{background:#111827;border:1px solid #334155;border-radius:10px;padding:10px;margin-bottom:10px}
+  .btn{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer;background:#facc15;color:#111827}
+  .chip{display:inline-block;padding:5px 10px;border-radius:999px;background:#1e293b;border:1px solid #334155;margin-right:6px}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 style="color:#facc15;margin-bottom:8px">🧪 Demo Test + Performance Analysis</h2>
+  <form method="POST">
+    {% for q in questions %}
+      <div class="q">
+        <p><strong>{{ loop.index }}. {{ q['question'] }}</strong> <span style="color:#93c5fd">({{ q['topic'] }})</span></p>
+        {% for opt in q['options'] %}
+          <label style="display:block;margin-top:4px"><input type="radio" name="q_{{ q['id'] }}" value="{{ opt }}" required> {{ opt }}</label>
+        {% endfor %}
+      </div>
+    {% endfor %}
+    <button class="btn" type="submit">Submit Demo Test</button>
+  </form>
+</section>
+
+{% if report %}
+<section class="panel" style="background:linear-gradient(135deg,#0b1220,#1e1b4b)">
+  <h3 style="color:#facc15">Detailed Report</h3>
+  <p>Score: <strong>{{ report['score'] }}/{{ report['total'] }}</strong> · Accuracy: <strong>{{ report['accuracy'] }}%</strong></p>
+  <div>
+    <span class="chip">Weak Topics</span>
+    {% for topic in report['weak_topics'] %}
+      <span class="chip" style="background:#7f1d1d;border-color:#b91c1c">{{ topic }}</span>
+    {% else %}
+      <span class="chip" style="background:#14532d;border-color:#22c55e">No weak topic found</span>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

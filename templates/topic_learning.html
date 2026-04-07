@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Topic Learning · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:14px}
+  input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;margin-bottom:10px}
+  .btn{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer;background:#facc15;color:#111827}
+  .grid{display:grid;grid-template-columns:1.7fr 1fr;gap:12px}
+  .item{background:#111827;border:1px solid #334155;border-radius:10px;padding:10px;margin-bottom:8px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 style="color:#facc15;margin-bottom:8px">📚 Topic-Based Learning Mode</h2>
+  <form method="POST">
+    <input type="text" name="topic" placeholder="Enter any topic (e.g. Electrostatics, Human Heart, Integration)" value="{{ topic }}" required>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <select name="teacher_mode">
+        <option value="normal" {% if teacher_mode == 'normal' %}selected{% endif %}>Normal</option>
+        <option value="strict" {% if teacher_mode == 'strict' %}selected{% endif %}>Strict</option>
+        <option value="very_strict" {% if teacher_mode == 'very_strict' %}selected{% endif %}>Very Strict</option>
+      </select>
+      <select name="provider">
+        <option value="gemini" {% if provider == 'gemini' %}selected{% endif %}>Gemini</option>
+        <option value="openrouter" {% if provider == 'openrouter' %}selected{% endif %}>OpenRouter</option>
+      </select>
+      <button class="btn" type="submit">Generate Learning Pack</button>
+    </div>
+  </form>
+</section>
+
+<div class="grid">
+  <section class="panel">
+    <h3 style="color:#facc15;margin-bottom:8px">Explanation</h3>
+    {% if explanation %}
+      <div style="line-height:1.65">{{ explanation|safe }}</div>
+    {% else %}
+      <p style="color:#94a3b8">Submit a topic to generate explanation.</p>
+    {% endif %}
+
+    {% if notes_points %}
+    <h3 style="color:#facc15;margin:14px 0 8px">Notes + Diagram Hints</h3>
+    {% for point in notes_points %}
+      <div class="item">✍️ {{ point }}</div>
+    {% endfor %}
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h3 style="color:#facc15;margin-bottom:8px">Practice Questions</h3>
+    {% if practice_questions %}
+      {% for q in practice_questions %}
+        <div class="item">{{ loop.index }}. {{ q }}</div>
+      {% endfor %}
+    {% else %}
+      <p style="color:#94a3b8">Practice set appears after generation.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

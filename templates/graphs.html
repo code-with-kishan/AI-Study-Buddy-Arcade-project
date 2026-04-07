@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Graphs · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:14px}
+  textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;margin-bottom:10px;min-height:110px}
+  .btn{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer;background:#facc15;color:#111827}
+</style>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 style="color:#facc15;margin-bottom:8px">📈 Live Graph Generator</h2>
+  <p style="color:#94a3b8;margin-bottom:8px">Enter multiple equations, one per line. Example: <code>y=x^2</code>, <code>y=2*x+1</code>, <code>y=Math.sin(x)</code></p>
+  <textarea id="equations">y=x^2
+y=2*x+1</textarea>
+  <p style="color:#94a3b8;margin-bottom:8px">Custom coordinates (one per line): <code>x,y</code> for example <code>1,2</code></p>
+  <textarea id="coordinates" style="min-height:90px" placeholder="0,0&#10;1,2&#10;2,5"></textarea>
+  <button class="btn" type="button" id="renderBtn">Render Live Graphs</button>
+</section>
+
+<section class="panel">
+  <div id="graphPlot" style="height:520px"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function evaluateExpression(expr, x){
+    const safe = expr.replace(/\^/g, '**');
+    return Function('x', `return ${safe};`)(x);
+  }
+
+  function render(){
+    const lines = document.getElementById('equations').value.split('\n').map(v=>v.trim()).filter(Boolean);
+    const coordinateLines = document.getElementById('coordinates').value.split('\n').map(v=>v.trim()).filter(Boolean);
+    const traces = [];
+    const xValues = [];
+    for(let x=-20; x<=20; x+=0.2){ xValues.push(Number(x.toFixed(2))); }
+
+    lines.forEach((line, idx)=>{
+      const rhs = line.startsWith('y=') ? line.slice(2) : line;
+      const yValues = xValues.map((x)=>{
+        try{ return evaluateExpression(rhs, x); } catch(_){ return null; }
+      });
+      traces.push({
+        x: xValues,
+        y: yValues,
+        type: 'scatter',
+        mode: 'lines',
+        name: line,
+        line: { width: 3 }
+      });
+    });
+
+    const customX = [];
+    const customY = [];
+    coordinateLines.forEach((line)=>{
+      const [xRaw, yRaw] = line.split(',').map(v=>v?.trim());
+      const x = Number(xRaw);
+      const y = Number(yRaw);
+      if(Number.isFinite(x) && Number.isFinite(y)){
+        customX.push(x);
+        customY.push(y);
+      }
+    });
+
+    if(customX.length){
+      traces.push({
+        x: customX,
+        y: customY,
+        type: 'scatter',
+        mode: 'markers+text',
+        name: 'Custom Coordinates',
+        text: customX.map((x, i)=>`(${x}, ${customY[i]})`),
+        textposition: 'top center',
+        marker: {size: 10, color: '#facc15', line: {width: 1, color: '#111827'}}
+      });
+    }
+
+    Plotly.newPlot('graphPlot', traces, {
+      paper_bgcolor: '#0b1220',
+      plot_bgcolor: '#111827',
+      font: { color: '#e5e7eb' },
+      xaxis: { gridcolor: '#334155', zerolinecolor: '#64748b' },
+      yaxis: { gridcolor: '#334155', zerolinecolor: '#64748b' },
+      legend: { orientation: 'h' },
+      margin: { t: 20 }
+    }, {responsive:true});
+  }
+
+  document.getElementById('renderBtn').addEventListener('click', render);
+  document.getElementById('equations').addEventListener('input', render);
+  document.getElementById('coordinates').addEventListener('input', render);
+  render();
+</script>
+{% endblock %}

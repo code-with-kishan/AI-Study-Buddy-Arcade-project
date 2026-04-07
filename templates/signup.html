@@ -4,52 +4,165 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up · AI Study Buddy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
+    :root{
+      --bg:#070b16;
+      --bg-2:#0c1530;
+      --card:rgba(13,18,33,.75);
+      --text:#f8fafc;
+      --muted:#9eabc1;
+      --border:#2f3b52;
+      --accent:#facc15;
+      --accent-2:#38bdf8;
+    }
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:Inter,system-ui,sans-serif;background:#060b16;color:#f8fafc;min-height:100vh}
-    .wrap{width:min(560px,92vw);margin:6vh auto;background:#0b1220;border:1px solid #334155;border-radius:16px;padding:22px}
-    h1{color:#facc15;margin-bottom:8px}
-    p{color:#cbd5e1;margin-bottom:14px}
-    input{width:100%;padding:11px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;margin-bottom:10px}
-    .avatars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
-    .avatar-option{background:#111827;border:1px solid #334155;border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:28px}
-    .avatar-option.active{border-color:#facc15;box-shadow:0 0 0 2px rgba(250,204,21,.2)}
-    button{width:100%;padding:11px;border:none;border-radius:10px;background:#facc15;color:#111827;font-weight:800;cursor:pointer}
-    .link{margin-top:10px;text-align:center;color:#94a3b8}
-    .link a{color:#facc15}
-    .flash{padding:10px;border-radius:8px;margin-bottom:10px}
+    body{
+      font-family:'Space Grotesk',sans-serif;
+      min-height:100vh;
+      color:var(--text);
+      background:
+        radial-gradient(800px 500px at 8% 10%,rgba(34,197,94,.14),transparent 55%),
+        radial-gradient(900px 560px at 95% 90%,rgba(56,189,248,.14),transparent 58%),
+        linear-gradient(165deg,var(--bg),var(--bg-2) 60%,#080c1d);
+      position:relative;
+      overflow-x:hidden;
+    }
+    .noise{position:fixed;inset:0;pointer-events:none;opacity:.13;background-image:radial-gradient(rgba(255,255,255,.25) 1px,transparent 1px);background-size:3px 3px;z-index:0}
+    .auth-wrap{
+      width:min(1120px,94vw);
+      margin:4vh auto 3vh;
+      position:relative;
+      z-index:2;
+      display:grid;
+      grid-template-columns:.92fr 1.08fr;
+      gap:16px;
+      align-items:stretch;
+    }
+    .teaser,.wrap{
+      border:1px solid var(--border);
+      border-radius:24px;
+      backdrop-filter:blur(12px);
+      background:var(--card);
+      box-shadow:0 22px 54px rgba(0,0,0,.31);
+    }
+    .teaser{padding:24px;background:linear-gradient(150deg,rgba(15,23,42,.9),rgba(18,20,44,.55))}
+    .mini{display:inline-flex;padding:7px 12px;border:1px solid #384766;background:#0f172a;border-radius:999px;color:#d8e4f8;font-size:12px;margin-bottom:16px}
+    .teaser h2{font-family:'Manrope',sans-serif;font-size:31px;line-height:1.18;margin-bottom:9px}
+    .teaser h2 span{color:var(--accent)}
+    .teaser p{color:var(--muted);line-height:1.6;margin-bottom:16px}
+    .list{display:grid;gap:8px}
+    .list div{padding:9px 11px;border-radius:11px;background:#0d172a;border:1px solid #30405b;color:#d6e2f6;font-size:14px}
+
+    .wrap{padding:24px}
+    h1{font-family:'Manrope',sans-serif;font-size:32px;margin-bottom:7px}
+    .sub{color:var(--muted);margin-bottom:14px}
+    .field{margin-bottom:11px}
+    .field label{display:block;font-size:12px;color:#c7d7f3;margin-bottom:5px}
+    input{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid #334155;
+      background:#0a1221;
+      color:#fff;
+      outline:none;
+      transition:border-color .22s ease, box-shadow .22s ease, transform .22s ease;
+    }
+    input:focus{border-color:var(--accent-2);box-shadow:0 0 0 3px rgba(56,189,248,.16);transform:translateY(-1px)}
+    .avatar-label{font-size:13px;color:#c2d3ef;margin-top:4px;margin-bottom:8px}
+    .avatars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 14px}
+    .avatar-option{
+      background:#0d172a;
+      border:1px solid #334155;
+      border-radius:12px;
+      padding:12px;
+      text-align:center;
+      cursor:pointer;
+      font-size:30px;
+      transition:transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+      user-select:none;
+    }
+    .avatar-option:hover{transform:translateY(-3px) scale(1.03);border-color:#60a5fa;box-shadow:0 10px 22px rgba(0,0,0,.25)}
+    .avatar-option.active{border-color:#facc15;box-shadow:0 0 0 2px rgba(250,204,21,.22),0 12px 22px rgba(250,204,21,.13)}
+    button{
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:12px;
+      background:linear-gradient(90deg,var(--accent),#fde047 55%,#fbbf24);
+      color:#111827;
+      font-family:'Manrope',sans-serif;
+      font-weight:800;
+      cursor:pointer;
+      transition:transform .24s ease, box-shadow .24s ease;
+    }
+    button:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 12px 26px rgba(250,204,21,.28)}
+    .link{margin-top:12px;text-align:center;color:#aebcd5}
+    .link a{color:#fef08a;font-weight:700}
+    .link a:hover{text-decoration:underline}
+    .flash{padding:10px;border-radius:10px;margin-bottom:10px;font-size:14px}
     .error{background:#3f1d1d;color:#fecaca;border:1px solid #ef4444}
     .success{background:#0f2a1d;color:#bbf7d0;border:1px solid #22c55e}
+
+    @media(max-width:940px){
+      .auth-wrap{grid-template-columns:1fr;margin:14px auto 24px}
+      .teaser h2{font-size:27px}
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    <h1>Create Your Player</h1>
-    <p>Pick a secure password and choose your game avatar.</p>
-
-    <form method="POST" id="signupForm">
-      <input type="text" name="username" placeholder="Username" required minlength="3">
-      <input type="password" name="password" placeholder="Password (min 6 chars)" required minlength="6">
-
-      <input type="hidden" name="avatar" id="avatarInput" value="{{ selected_avatar }}">
-      <div class="avatars">
-        {% for avatar in avatars %}
-          <div class="avatar-option {% if avatar == selected_avatar %}active{% endif %}" data-avatar="{{ avatar }}">{{ avatar }}</div>
-        {% endfor %}
+  <div class="noise"></div>
+  <div class="auth-wrap">
+    <section class="teaser">
+      <span class="mini">Student-first premium onboarding</span>
+      <h2>Build your learning identity in <span>under 30 seconds</span>.</h2>
+      <p>Your account unlocks personalized doubt solving, contests, report cards, reminders, and a complete study tracking experience.</p>
+      <div class="list">
+        <div>Adaptive AI notes with clean exports</div>
+        <div>Weekly contest ranks and XP growth</div>
+        <div>Smart reminders and streak analytics</div>
+        <div>3D models and concept exploration</div>
       </div>
+    </section>
 
-      <button type="submit">Sign Up</button>
-    </form>
+    <section class="wrap">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-    <div class="link">Already have account? <a href="{{ url_for('login') }}">Login</a></div>
+      <h1>Sign Up</h1>
+      <p class="sub">Create your account and choose your avatar style.</p>
+
+      <form method="POST" id="signupForm">
+        <div class="field">
+          <label>Username</label>
+          <input type="text" name="username" placeholder="Choose a username" required minlength="3">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" name="password" placeholder="Minimum 6 characters" required minlength="6">
+        </div>
+
+        <input type="hidden" name="avatar" id="avatarInput" value="{{ selected_avatar }}">
+        <div class="avatar-label">Pick your player avatar</div>
+        <div class="avatars">
+          {% for avatar in avatars %}
+            <div class="avatar-option {% if avatar == selected_avatar %}active{% endif %}" data-avatar="{{ avatar }}">{{ avatar }}</div>
+          {% endfor %}
+        </div>
+
+        <button type="submit">Create Account</button>
+      </form>
+
+      <div class="link">Already have account? <a href="{{ url_for('login') }}">Login</a></div>
+    </section>
   </div>
 
   <script>

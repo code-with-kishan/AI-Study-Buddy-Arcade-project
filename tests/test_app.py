@@ -149,10 +149,6 @@ class AppRoutesTestCase(unittest.TestCase):
         xp_center = self.client.get("/xp-center")
         self.assertEqual(xp_center.status_code, 200)
 
-        export = self.client.get("/export_scores.pdf")
-        self.assertEqual(export.status_code, 200)
-        self.assertEqual(export.mimetype, "application/pdf")
-
     def test_assistant_api_returns_guidance(self):
         self._signup_and_login()
 

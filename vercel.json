@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "https://YOUR-RENDER-BACKEND.onrender.com/$1"
+    }
+  ]
+}

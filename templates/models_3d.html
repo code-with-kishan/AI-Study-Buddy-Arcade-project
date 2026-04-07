@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}3D Models · AI Study Buddy{% endblock %}
+
+{% block head %}
+<style>
+  .panel{background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:16px;margin-bottom:14px}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(240px,1fr));gap:12px}
+  .viewer{height:260px;border-radius:12px;border:1px solid #334155;background:#111827}
+  .model-tag{display:inline-block;margin:8px 0 6px 0;padding:4px 10px;border-radius:999px;background:#1e293b;border:1px solid #334155;color:#93c5fd;font-size:12px}
+  .model-detail{color:#cbd5e1;font-size:13px;line-height:1.5}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 style="color:#facc15;margin-bottom:8px">🧊 3D Models Section</h2>
+  <p style="color:#94a3b8">Interactive preview cards mapped to your demo files with rotate, zoom, and pan support.</p>
+</section>
+
+<section class="grid">
+  <div class="panel">
+    <h3 style="color:#facc15">Electric Motor</h3>
+    <span class="model-tag">demo1.glb</span>
+    <p class="model-detail">Core rotational mechanism preview showing shaft-like movement behavior for motor concepts.</p>
+    <p id="s1" style="color:#93c5fd;font-size:12px;margin:0 0 8px 0">Preview: loading model...</p>
+    <div id="v1" class="viewer"></div>
+  </div>
+  <div class="panel">
+    <h3 style="color:#facc15">Human Heart</h3>
+    <span class="model-tag">demo2.glb</span>
+    <p class="model-detail">Anatomy-inspired preview for chamber-focused learning and blood flow orientation discussions.</p>
+    <p id="s2" style="color:#93c5fd;font-size:12px;margin:0 0 8px 0">Preview: loading model...</p>
+    <div id="v2" class="viewer"></div>
+  </div>
+  <div class="panel">
+    <h3 style="color:#facc15">Refrigerator</h3>
+    <span class="model-tag">demo3.glb</span>
+    <p class="model-detail">Appliance form preview useful for thermodynamics and refrigeration cycle explanation basics.</p>
+    <p id="s3" style="color:#93c5fd;font-size:12px;margin:0 0 8px 0">Preview: loading model...</p>
+    <div id="v3" class="viewer"></div>
+  </div>
+  <div class="panel">
+    <h3 style="color:#facc15">Solar System</h3>
+    <span class="model-tag">demo4.glb</span>
+    <p class="model-detail">Orbital-style visual block for introductory planetary motion and space-science demonstrations.</p>
+    <p id="s4" style="color:#93c5fd;font-size:12px;margin:0 0 8px 0">Preview: loading model...</p>
+    <div id="v4" class="viewer"></div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const viewers = [];
+
+  function mountViewer(id, statusId, modelUrl, geometryFactory, color){
+    const container = document.getElementById(id);
+    const statusNode = document.getElementById(statusId);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#111827');
+
+    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(2,2,3);
+
+    const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    let modelRoot = null;
+
+    function attachFallback() {
+      const geo = geometryFactory();
+      const mat = new THREE.MeshStandardMaterial({color:color, metalness:0.2, roughness:0.5});
+      const mesh = new THREE.Mesh(geo, mat);
+      scene.add(mesh);
+      modelRoot = mesh;
+      if (statusNode) statusNode.textContent = 'Preview: demo geometry fallback';
+    }
+
+    let loaded = false;
+    const timeoutHandle = setTimeout(()=>{
+      if(!loaded){
+        attachFallback();
+      }
+    }, 1800);
+
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+      modelUrl,
+      (gltf)=>{
+        loaded = true;
+        clearTimeout(timeoutHandle);
+        modelRoot = gltf.scene;
+        if (!modelRoot || modelRoot.children.length === 0) {
+          attachFallback();
+          return;
+        }
+        scene.add(modelRoot);
+        if (statusNode) statusNode.textContent = 'Preview: loaded from ' + modelUrl.split('/').pop();
+      },
+      undefined,
+      ()=>{
+        loaded = true;
+        clearTimeout(timeoutHandle);
+        attachFallback();
+      }
+    );
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(3,3,2);
+    scene.add(light);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enablePan = true;
+    controls.enableZoom = true;
+
+    viewers.push({scene, camera, renderer, controls, getModel: ()=>modelRoot});
+
+    window.addEventListener('resize', ()=>{
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+  }
+
+  const configs = [
+    ['v1', 's1', '/static/models/demo1.glb', ()=>new THREE.TorusKnotGeometry(0.8,0.24,120,16), '#f59e0b'],
+    ['v2', 's2', '/static/models/demo2.glb', ()=>new THREE.SphereGeometry(1,32,32), '#22c55e'],
+    ['v3', 's3', '/static/models/demo3.glb', ()=>new THREE.ConeGeometry(1,2,32), '#0ea5e9'],
+    ['v4', 's4', '/static/models/demo4.glb', ()=>new THREE.BoxGeometry(1.8,1.8,1.8), '#a855f7']
+  ];
+
+  // Lazy create viewers only when cards are near viewport to improve first paint speed.
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach((entry)=>{
+      if(!entry.isIntersecting) return;
+      const id = entry.target.id;
+      const cfg = configs.find(c=>c[0] === id);
+      if(cfg && !entry.target.dataset.ready){
+        mountViewer(...cfg);
+        entry.target.dataset.ready = '1';
+      }
+      observer.unobserve(entry.target);
+    });
+  }, {rootMargin: '180px'});
+
+  configs.forEach((cfg)=>{
+    const node = document.getElementById(cfg[0]);
+    if(node) observer.observe(node);
+  });
+
+  function animateAll(){
+    requestAnimationFrame(animateAll);
+    for(const v of viewers){
+      const model = v.getModel();
+      if(model){
+        model.rotation.y += 0.006;
+      }
+      v.controls.update();
+      v.renderer.render(v.scene, v.camera);
+    }
+  }
+  animateAll();
+</script>
+{% endblock %}
