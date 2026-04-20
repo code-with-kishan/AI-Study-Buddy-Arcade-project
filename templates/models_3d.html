@@ -140,10 +140,10 @@
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
   const MODELS = {
-    demo1: { name: 'Electric Motor', file: 'demo1.glb', sources: ['/static/models/demo1.glb'] },
-    demo2: { name: 'Human Heart', file: 'demo2.glb', sources: ['/static/models/demo2.glb'] },
-    demo3: { name: 'Refrigerator', file: 'demo3.glb', sources: ['/static/models/demo3.glb'] },
-    demo4: { name: 'Solar System', file: 'demo4.glb', sources: ['/static/models/demo4.glb'] }
+    demo1: { name: 'Electric Motor', file: 'demo1.glb', sources: ['/static/models/demo1.glb', 'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Duck/glTF-Binary/Duck.glb'] },
+    demo2: { name: 'Human Heart', file: 'demo2.glb', sources: ['/static/models/demo2.glb', 'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Avocado/glTF-Binary/Avocado.glb'] },
+    demo3: { name: 'Refrigerator', file: 'demo3.glb', sources: ['/static/models/demo3.glb', 'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb'] },
+    demo4: { name: 'Solar System', file: 'demo4.glb', sources: ['/static/models/demo4.glb', 'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/BoomBox/glTF-Binary/BoomBox.glb'] }
   };
 
   const modal = document.getElementById('modelModal');

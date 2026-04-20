@@ -1,0 +1,15 @@
+.git
+.gitignore
+.github/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+.env
+*.db
+apps/
+node_modules/
+.next/
+.DS_Store
